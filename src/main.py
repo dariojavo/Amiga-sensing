@@ -129,11 +129,11 @@ class TemplateApp(App):
             await asyncio.sleep(1.0)
 
             if self.start_counter:
-                # increment the counter using internal libs and update the gui
-                self.counter = ops.add(self.counter, 1)
-                self.root.ids.counter_label.text = (
-                    f"{'Tic' if self.counter % 2 == 0 else 'Tac'}: {self.counter}"
-                )
+                # # increment the counter using internal libs and update the gui
+                # self.counter = ops.add(self.counter, 1)
+                # self.root.ids.counter_label.text = (
+                #     f"{'Tic' if self.counter % 2 == 0 else 'Tac'}: {self.counter}"
+                # )
 
                 # Update the noisy image and map marker
                 self.update_noisy_image()
