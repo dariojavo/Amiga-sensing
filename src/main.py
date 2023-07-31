@@ -39,9 +39,13 @@ class RootWidget(BoxLayout):
         self.app = app  # store the app instance
 
     def btn_clk(self):
-        self.app.start_counter = True  # start the counter when the button is clicked
-        # self.lbl.text = "You have been pressed"
-
+        self.app.start_counter = not self.app.start_counter  # Toggle the counter state
+        if self.app.start_counter:
+            self.ids.record_button.text = 'Stop'
+            self.ids.record_button.color = [1, 0, 0, 1]  # Change the button's color to red
+        else:
+            self.ids.record_button.text = 'Record'
+            self.ids.record_button.color = [0, 1, 1, .67]  # Change the button's color back to original
 class TemplateApp(App):
     """Base class for the main Kivy app."""
 

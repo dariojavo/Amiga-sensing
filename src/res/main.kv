@@ -11,14 +11,21 @@
         orientation: 'vertical'
         size: [1, .25]
         
-        Button:
-            text:'Record'
-            font_size:"20sp"
-            color: [0, 255, 255, .67]
-            on_release: app.root.btn_clk()
         Label:
             id: counter_label
             text: 'Counter: 0'  # Initial text for the counter label
 
         Image:
             id: image  # Reference to the Image widget for updating the image
+
+            Button:
+                id: record_button
+                text: 'Start'
+                font_size: '20sp'
+                color: [0, 1, 1, 0.67]
+                size_hint: None, None  # Allow the button to be any size
+                size: 100, 50  # Set a specific button size
+                pos_hint: {'right': 1, 'y': 0}  # Place it bottom-right
+                on_release: 
+                    app.root.btn_clk()
+                    app.root.record_button = self
