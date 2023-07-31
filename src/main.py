@@ -30,7 +30,8 @@ from kivy.uix.image import Image
 from kivy.clock import Clock
 from kivy.graphics.texture import Texture
 from kivy_garden.mapview import MapView, MapMarker
-
+import csv
+import time
 
 # class in which we are defining action on click
 class RootWidget(BoxLayout):
@@ -43,6 +44,34 @@ class RootWidget(BoxLayout):
         if self.app.start_counter:
             self.ids.record_button.text = 'Stop'
             self.ids.record_button.color = [1, 0, 0, 1]  # Change the button's color to red
+            # Create new csv file for data recording
+            
+            # Generate a timestamp-based filename for the CSV
+            timestamp = int(time.time())
+            new_path = f'/home/dariojavo/Dropbox/SCOUT/AMIGA/Amiga-sensing/Amiga_record_{timestamp}'
+            os.makedirs(new_path, exist_ok= True)
+            # Create a folder for saving images specific to the camera ID
+            image_save_path = new_path + '/camera_OAK0/'
+            os.makedirs(image_save_path, exist_ok=True)
+
+            image_save_path =  new_path + '/camera_OAK1/'
+            os.makedirs(image_save_path, exist_ok=True)
+
+            gps_save_path = new_path + '/gps-sparkfun/'
+            os.makedirs(gps_save_path, exist_ok=True)           
+
+            csv_filename = new_path + f'/Amiga_record_{timestamp}.csv'
+    
+            # Header for the CSV file
+            header = ["Timestamp", "Camera ID", "Image Name", "Latitude", "Longitude"]
+
+            # Open the CSV file for writing (in append mode 'a')
+            with open(csv_filename, 'a', newline='') as csvfile:
+                csv_writer = csv.writer(csvfile)
+
+                # Write the header row to the CSV file
+                csv_writer.writerow(header)
+
         else:
             self.ids.record_button.text = 'Record'
             self.ids.record_button.color = [0, 1, 1, .67]  # Change the button's color back to original
