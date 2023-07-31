@@ -1,4 +1,4 @@
-BoxLayout:
+<RootWidget>:
     orientation: 'horizontal'
 
 
@@ -9,7 +9,13 @@ BoxLayout:
 
     BoxLayout:
         orientation: 'vertical'
-
+        size: [1, .25]
+        
+        Button:
+            text:'Record'
+            font_size:"20sp"
+            color: [0, 255, 255, .67]
+            on_release: app.root.btn_clk()
         Label:
             id: counter_label
             text: 'Counter: 0'  # Initial text for the counter label

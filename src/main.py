@@ -32,6 +32,16 @@ from kivy.graphics.texture import Texture
 from kivy_garden.mapview import MapView, MapMarker
 
 
+# class in which we are defining action on click
+class RootWidget(BoxLayout):
+    def __init__(self, app, **kwargs):
+        super().__init__(**kwargs)
+        self.app = app  # store the app instance
+
+    def btn_clk(self):
+        self.app.start_counter = True  # start the counter when the button is clicked
+        # self.lbl.text = "You have been pressed"
+
 class TemplateApp(App):
     """Base class for the main Kivy app."""
 
@@ -42,11 +52,13 @@ class TemplateApp(App):
         self.marker = None  # Initialize the marker attribute
         self.async_tasks: List[asyncio.Task] = []
         self.longitude = -122.4194
-        self.latitude = 37.7749 
+        self.latitude = 37.7749
+        self.start_counter = False
 
     def build(self):
         root =  Builder.load_file("res/main.kv")
         # Right half with a map view
+        root = RootWidget(self)
         self.mapview = root.ids.map_view
 
         self.image = root.ids.image
@@ -54,7 +66,7 @@ class TemplateApp(App):
         # self.image.size_hint = (0.5, 1)
         self.image.allow_stretch = True
         self.image.keep_ratio = False
-
+        
         return root
 
 
@@ -83,16 +95,17 @@ class TemplateApp(App):
         while True:
             await asyncio.sleep(1.0)
 
-            # increment the counter using internal libs and update the gui
-            self.counter = ops.add(self.counter, 1)
-            self.root.ids.counter_label.text = (
-                f"{'Tic' if self.counter % 2 == 0 else 'Tac'}: {self.counter}"
-            )
+            if self.start_counter:
+                # increment the counter using internal libs and update the gui
+                self.counter = ops.add(self.counter, 1)
+                self.root.ids.counter_label.text = (
+                    f"{'Tic' if self.counter % 2 == 0 else 'Tac'}: {self.counter}"
+                )
 
-            # Update the noisy image and map marker
-            self.update_noisy_image()
-            self.update_gps_position()
-            
+                # Update the noisy image and map marker
+                self.update_noisy_image()
+                self.update_gps_position()
+                
 
     def update_noisy_image(self):
         # Generate a random noisy image (300x300 with random values between 0 and 255)
@@ -118,8 +131,8 @@ class TemplateApp(App):
     def update_gps_position(self):
         # In this example, we'll use dummy GPS coordinates.
         # You should replace these with real GPS coordinates if available.
-        self.latitude = self.latitude + 0.001  # San Francisco, CA, USA
-        self.longitude = self.longitude + 0.001
+        self.latitude = self.latitude + 0.0001  # San Francisco, CA, USA
+        self.longitude = self.longitude + 0.0001
         latitude = self.latitude
         longitude = self.longitude
         # Update the marker position on the map
