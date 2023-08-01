@@ -102,6 +102,9 @@ class TemplateApp(App):
         self.image_decoder = TurboJPEG()
         self.tasks: List[asyncio.Task] = []
 
+        # Move the mapview attribute to the class level
+        self.mapview = None
+
     def build(self):
         root =  Builder.load_file("res/main.kv")
         # Right half with a map view
