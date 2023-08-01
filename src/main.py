@@ -70,7 +70,7 @@ class RootWidget(BoxLayout):
             csv_filename = new_path + f'/Amiga_record_{timestamp}.csv'
     
             # Header for the CSV file
-            header = ["Timestamp", "Camera ID", "Image Name", "Latitude", "Longitude"]
+            header = ["Timestamp", "Camera ID", "Image Name", "GPS file", "Latitude", "Longitude"]
 
             # Open the CSV file for writing (in append mode 'a')
             with open(csv_filename, 'a', newline='') as csvfile:
@@ -101,9 +101,6 @@ class TemplateApp(App):
 
         self.image_decoder = TurboJPEG()
         self.tasks: List[asyncio.Task] = []
-
-        # Move the mapview attribute to the class level
-        self.mapview = None
 
     def build(self):
         root =  Builder.load_file("res/main.kv")
@@ -151,7 +148,7 @@ class TemplateApp(App):
         # Stream camera frames
         self.tasks.append(asyncio.ensure_future(self.stream_camera(client, 50051)))
         self.tasks.append(asyncio.ensure_future(self.stream_camera(client2, 50052)))
-        # self.tasks.append(asyncio.ensure_future(self.update_gps_position()))
+        self.tasks.append(asyncio.ensure_future(self.update_gps_position()))
         return await asyncio.gather(run_wrapper(), *self.tasks) 
 
     # async def template_function(self) -> None:
@@ -279,23 +276,28 @@ class TemplateApp(App):
     #     # Set the texture for the Image widget
     #     self.image.texture = texture
 
-    def update_gps_position(self):
-        # In this example, we'll use dummy GPS coordinates.
-        # You should replace these with real GPS coordinates if available.
-        self.latitude = self.latitude + 0.0001  # San Francisco, CA, USA
-        self.longitude = self.longitude + 0.0001
-        latitude = self.latitude
-        longitude = self.longitude
-        # Update the marker position on the map
-        if self.marker is not None:
-            self.mapview.remove_marker(self.marker)  # Remove previous marker
-        self.marker = MapMarker(lat=latitude, lon=longitude)
-        self.mapview.add_marker(self.marker)
+    async def update_gps_position(self):
+        while self.root is None:
+            await asyncio.sleep(0.01)
 
-        # Center the map view on the current GPS position
-        self.mapview.center_on(latitude, longitude)
-        self.mapview.zoom = 15
+        while True:
+            # In this example, we'll use dummy GPS coordinates.
+            # You should replace these with real GPS coordinates if available.
+            self.latitude = self.latitude + 0.0001  # San Francisco, CA, USA
+            self.longitude = self.longitude + 0.0001
+            latitude = self.latitude
+            longitude = self.longitude
+            # Update the marker position on the map
+            if self.marker is not None:
+                self.mapview.remove_marker(self.marker)  # Remove previous marker
+            self.marker = MapMarker(lat=latitude, lon=longitude)
+            self.mapview.add_marker(self.marker)
 
+            # Center the map view on the current GPS position
+            self.mapview.center_on(latitude, longitude)
+            self.mapview.zoom = 15
+            await asyncio.sleep(0.1)
+            continue
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="template-app")
