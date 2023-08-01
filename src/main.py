@@ -95,9 +95,9 @@ class TemplateApp(App):
         self.latitude = 37.7749
         self.start_counter = False
         self.path = path
-        # self.address = address
-        # self.port = port
-        # self.stream_every_n = stream_every_n
+        self.address = address
+        self.port = port
+        self.stream_every_n = stream_every_n
 
         self.image_decoder = TurboJPEG()
         self.tasks: List[asyncio.Task] = []
@@ -109,6 +109,9 @@ class TemplateApp(App):
         self.mapview = root.ids.map_view
 
         self.image = root.ids.image
+        self.rgb = root.ids.rgb
+        self.rgb.allow_stretch = True
+        self.rgb.keep_ratio = False
 
         # self.image.size_hint = (0.5, 1)
         self.image.allow_stretch = True
@@ -129,48 +132,62 @@ class TemplateApp(App):
             for task in self.async_tasks:
                 task.cancel()
 
-        # Placeholder task
-        self.async_tasks.append(asyncio.ensure_future(self.template_function()))
+        # # Placeholder task
+        # self.async_tasks.append(asyncio.ensure_future(self.template_function()))
 
-        return await asyncio.gather(run_wrapper(), *self.async_tasks)
+        # return await asyncio.gather(run_wrapper(), *self.async_tasks)
 
-    async def template_function(self) -> None:
-        """Placeholder forever loop."""
-        while self.root is None:
-            await asyncio.sleep(0.01)
+        # configure the camera client
+        config = ClientConfig(address=self.address, port=self.port)
+        client = OakCameraClient(config)
 
-        while True:
+        # configure the camera client
+        config2 = ClientConfig(address=self.address, port=50052)
+        client2 = OakCameraClient(config2)
 
-            async def run_wrapper():
-                # we don't actually need to set asyncio as the lib because it is
-                # the default, but it doesn't hurt to be explicit
-                await self.async_run(async_lib="asyncio")
-                for task in self.tasks:
-                    task.cancel()
+        # Stream camera frames
+        self.tasks.append(asyncio.ensure_future(self.stream_camera(client, 50051)))
+        self.tasks.append(asyncio.ensure_future(self.stream_camera(client2, 50052)))
+        # self.tasks.append(asyncio.ensure_future(self.update_gps_position()))
+        return await asyncio.gather(run_wrapper(), *self.tasks) 
 
-            # await asyncio.sleep(1.0)
+    # async def template_function(self) -> None:
+    #     """Placeholder forever loop."""
+    #     while self.root is None:
+    #         await asyncio.sleep(0.01)
 
-            if self.start_counter:
-                # # increment the counter using internal libs and update the gui
-                # self.counter = ops.add(self.counter, 1)
-                # self.root.ids.counter_label.text = (
-                #     f"{'Tic' if self.counter % 2 == 0 else 'Tac'}: {self.counter}"
-                # )
+    #     while True:
+    #         await asyncio.sleep(1.0)
+    #         async def run_wrapper():
+    #             # we don't actually need to set asyncio as the lib because it is
+    #             # the default, but it doesn't hurt to be explicit
+    #             await self.async_run(async_lib="asyncio")
+    #             for task in self.tasks:
+    #                 task.cancel()
 
-                # Update the noisy image and map marker
-                self.update_noisy_image()
-                self.update_gps_position()
+    #         # await asyncio.sleep(1.0)
 
-                # # configure the camera client
-                # config = ClientConfig(address=self.address, port=self.port)
-                # client = OakCameraClient(config)
+    #         if self.start_counter:
+    #             # # increment the counter using internal libs and update the gui
+    #             # self.counter = ops.add(self.counter, 1)
+    #             # self.root.ids.counter_label.text = (
+    #             #     f"{'Tic' if self.counter % 2 == 0 else 'Tac'}: {self.counter}"
+    #             # )
 
-                # # Stream camera frames
-                # self.tasks.append(asyncio.ensure_future(self.stream_camera(client)))
+    #             # Update the noisy image and map marker
+    #             # self.update_noisy_image()
+    #             self.update_gps_position()
 
-                # return await asyncio.gather(run_wrapper(), *self.tasks)             
+    #             # configure the camera client
+    #             config = ClientConfig(address=self.address, port=self.port)
+    #             client = OakCameraClient(config)
 
-    async def stream_camera(self, client: OakCameraClient) -> None:
+    #             # Stream camera frames
+    #             self.tasks.append(asyncio.ensure_future(self.stream_camera(client)))
+
+    #             return await asyncio.gather(run_wrapper(), *self.tasks)             
+
+    async def stream_camera(self, client: OakCameraClient, port) -> None:
         """This task listens to the camera client's stream and populates the tabbed panel with all 4 image streams
         from the oak camera."""
         while self.root is None:
@@ -229,32 +246,35 @@ class TemplateApp(App):
                         bufferfmt="ubyte",
                         mipmap_generation=False,
                     )
-                    self.image.texture = texture
-
+                    if port == 50051:
+                        self.image.texture = texture
+                    elif port == 50052:
+                        self.rgb.texture = texture
+                
                 except Exception as e:
                     print(e)
 
 
-    def update_noisy_image(self):
-        # Generate a random noisy image (300x300 with random values between 0 and 255)
-        noise_img = np.random.randint(0, 256, (1920, 1080, 3), dtype=np.uint8)
+    # def update_noisy_image(self):
+    #     # Generate a random noisy image (300x300 with random values between 0 and 255)
+    #     noise_img = np.random.randint(0, 256, (1920, 1080, 3), dtype=np.uint8)
 
-        # Display the noisy image in the left half
-        self.display_image(noise_img)
+    #     # Display the noisy image in the left half
+    #     self.display_image(noise_img)
 
-    def display_image(self, img_array):
-        # Convert NumPy array to Kivy Texture
-        h, w, _ = img_array.shape
-        texture = Texture.create(size=(w, h), colorfmt='rgb')
+    # def display_image(self, img_array):
+    #     # Convert NumPy array to Kivy Texture
+    #     h, w, _ = img_array.shape
+    #     texture = Texture.create(size=(w, h), colorfmt='rgb')
 
-        # Flip the image vertically (Kivy's image origin is bottom-left)
-        img_array = np.flipud(img_array)
+    #     # Flip the image vertically (Kivy's image origin is bottom-left)
+    #     img_array = np.flipud(img_array)
 
-        # Copy the image data to the texture
-        texture.blit_buffer(img_array.tobytes(), colorfmt='rgb', bufferfmt='ubyte')
+    #     # Copy the image data to the texture
+    #     texture.blit_buffer(img_array.tobytes(), colorfmt='rgb', bufferfmt='ubyte')
 
-        # Set the texture for the Image widget
-        self.image.texture = texture
+    #     # Set the texture for the Image widget
+    #     self.image.texture = texture
 
     def update_gps_position(self):
         # In this example, we'll use dummy GPS coordinates.
