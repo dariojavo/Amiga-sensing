@@ -4,7 +4,7 @@ import asyncio
 import os
 from typing import List
 
-from amiga_sensing import ops
+from amiga_sensing.GPS import GPS, find_gps_device
 
 # import internal libs
 
@@ -39,6 +39,11 @@ from farm_ng.service.service_client import ClientConfig
 from turbojpeg import TurboJPEG
 import grpc
 
+def get_timestamp_with_milliseconds():
+    timestamp = time.time()
+    milliseconds = int((timestamp - int(timestamp)) * 1000)
+    return timestamp, milliseconds
+
 # class in which we are defining action on click
 class RootWidget(BoxLayout):
     def __init__(self, app, path, **kwargs):
@@ -61,11 +66,15 @@ class RootWidget(BoxLayout):
             image_save_path = new_path + '/camera_OAK0/'
             os.makedirs(image_save_path, exist_ok=True)
 
+            
             image_save_path =  new_path + '/camera_OAK1/'
             os.makedirs(image_save_path, exist_ok=True)
 
+            global gps_save_path
             gps_save_path = new_path + '/gps-sparkfun/'
             os.makedirs(gps_save_path, exist_ok=True)           
+
+            global csv_filename
 
             csv_filename = new_path + f'/Amiga_record_{timestamp}.csv'
     
@@ -98,7 +107,13 @@ class TemplateApp(App):
         self.address = address
         self.port = port
         self.stream_every_n = stream_every_n
-
+        gps_device = find_gps_device()
+        if gps_device:
+            print(f"GPS device found: {gps_device}")
+        else:
+            print("No GPS device found.")
+            gps_device = None
+        self.gps = GPS(gps_device, simulation=True)
         self.image_decoder = TurboJPEG()
         self.tasks: List[asyncio.Task] = []
 
@@ -131,7 +146,7 @@ class TemplateApp(App):
             await self.async_run(async_lib="asyncio")
             for task in self.async_tasks:
                 task.cancel()
-
+   
         # # Placeholder task
         # self.async_tasks.append(asyncio.ensure_future(self.template_function()))
 
@@ -144,6 +159,9 @@ class TemplateApp(App):
         # configure the camera client
         config2 = ClientConfig(address=self.address, port=50052)
         client2 = OakCameraClient(config2)
+        
+        #Start GPS
+        self.gps.start()
 
         # Stream camera frames
         self.tasks.append(asyncio.ensure_future(self.stream_camera(client, 50051)))
@@ -283,10 +301,21 @@ class TemplateApp(App):
         while True:
             # In this example, we'll use dummy GPS coordinates.
             # You should replace these with real GPS coordinates if available.
-            self.latitude = self.latitude + 0.0001  # San Francisco, CA, USA
-            self.longitude = self.longitude + 0.0001
-            latitude = self.latitude
-            longitude = self.longitude
+
+            self.geo = self.gps.update_gps()
+            latitude = self.geo["lat"]
+            longitude = self.geo["lon"]
+            timestamp, milliseconds = get_timestamp_with_milliseconds()
+            gps_file_name = gps_save_path + f'/gps_data_{timestamp}'
+            # Writing to sample.json
+            with open(gps_file_name, "w") as outfile:
+                outfile.write(self.geo)
+            with open(csv_filename, 'a', newline='') as csvfile:
+                    csv_writer = csv.writer(csvfile)
+                    image_name = f'image_{camera_id}_{int(timestamp)}_{milliseconds:03d}.jpg'
+                    camera_id = ''
+                    image_name = ''
+                    csv_writer.writerow([timestamp, camera_id, image_name, gps_file_name, latitude, longitude])                
             # Update the marker position on the map
             if self.marker is not None:
                 self.mapview.remove_marker(self.marker)  # Remove previous marker
