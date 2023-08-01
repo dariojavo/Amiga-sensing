@@ -35,9 +35,10 @@ import time
 
 # class in which we are defining action on click
 class RootWidget(BoxLayout):
-    def __init__(self, app, **kwargs):
+    def __init__(self, app, path, **kwargs):
         super().__init__(**kwargs)
         self.app = app  # store the app instance
+        self.path = path
 
     def btn_clk(self):
         self.app.start_counter = not self.app.start_counter  # Toggle the counter state
@@ -48,7 +49,7 @@ class RootWidget(BoxLayout):
             
             # Generate a timestamp-based filename for the CSV
             timestamp = int(time.time())
-            new_path = f'/home/dariojavo/Dropbox/SCOUT/AMIGA/Amiga-sensing/Amiga_record_{timestamp}'
+            new_path = self.path + f'/Amiga_record_{timestamp}'
             os.makedirs(new_path, exist_ok= True)
             # Create a folder for saving images specific to the camera ID
             image_save_path = new_path + '/camera_OAK0/'
@@ -78,7 +79,7 @@ class RootWidget(BoxLayout):
 class TemplateApp(App):
     """Base class for the main Kivy app."""
 
-    def __init__(self) -> None:
+    def __init__(self, path: str) -> None:
         super().__init__()
 
         self.counter: int = 0
@@ -87,11 +88,12 @@ class TemplateApp(App):
         self.longitude = -122.4194
         self.latitude = 37.7749
         self.start_counter = False
+        self.path = path
 
     def build(self):
         root =  Builder.load_file("res/main.kv")
         # Right half with a map view
-        root = RootWidget(self)
+        root = RootWidget(self, path=self.path)
         self.mapview = root.ids.map_view
 
         self.image = root.ids.image
@@ -183,12 +185,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="template-app")
 
     # Add additional command line arguments here
-
+    parser.add_argument("--path", type=str, default='/data/data_recording/', required=False, help="The camera port.")
     args = parser.parse_args()
 
     loop = asyncio.get_event_loop()
     try:
-        loop.run_until_complete(TemplateApp().app_func())
+        loop.run_until_complete(TemplateApp(args.path).app_func())
     except asyncio.CancelledError:
         pass
     loop.close()
