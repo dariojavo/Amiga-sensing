@@ -32,6 +32,12 @@ from kivy.graphics.texture import Texture
 from kivy_garden.mapview import MapView, MapMarker
 import csv
 import time
+from farm_ng.oak import oak_pb2
+from farm_ng.oak.camera_client import OakCameraClient
+from farm_ng.service import service_pb2
+from farm_ng.service.service_client import ClientConfig
+from turbojpeg import TurboJPEG
+import grpc
 
 # class in which we are defining action on click
 class RootWidget(BoxLayout):
@@ -79,7 +85,7 @@ class RootWidget(BoxLayout):
 class TemplateApp(App):
     """Base class for the main Kivy app."""
 
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: str, address: str, port: int, stream_every_n: int) -> None:
         super().__init__()
 
         self.counter: int = 0
@@ -89,6 +95,12 @@ class TemplateApp(App):
         self.latitude = 37.7749
         self.start_counter = False
         self.path = path
+        # self.address = address
+        # self.port = port
+        # self.stream_every_n = stream_every_n
+
+        self.image_decoder = TurboJPEG()
+        self.tasks: List[asyncio.Task] = []
 
     def build(self):
         root =  Builder.load_file("res/main.kv")
@@ -128,7 +140,15 @@ class TemplateApp(App):
             await asyncio.sleep(0.01)
 
         while True:
-            await asyncio.sleep(1.0)
+
+            async def run_wrapper():
+                # we don't actually need to set asyncio as the lib because it is
+                # the default, but it doesn't hurt to be explicit
+                await self.async_run(async_lib="asyncio")
+                for task in self.tasks:
+                    task.cancel()
+
+            # await asyncio.sleep(1.0)
 
             if self.start_counter:
                 # # increment the counter using internal libs and update the gui
@@ -140,7 +160,80 @@ class TemplateApp(App):
                 # Update the noisy image and map marker
                 self.update_noisy_image()
                 self.update_gps_position()
-                
+
+                # # configure the camera client
+                # config = ClientConfig(address=self.address, port=self.port)
+                # client = OakCameraClient(config)
+
+                # # Stream camera frames
+                # self.tasks.append(asyncio.ensure_future(self.stream_camera(client)))
+
+                # return await asyncio.gather(run_wrapper(), *self.tasks)             
+
+    async def stream_camera(self, client: OakCameraClient) -> None:
+        """This task listens to the camera client's stream and populates the tabbed panel with all 4 image streams
+        from the oak camera."""
+        while self.root is None:
+            await asyncio.sleep(0.01)
+
+        response_stream = None
+
+        while True:
+            # check the state of the service
+            state = await client.get_state()
+
+            if state.value not in [
+                service_pb2.ServiceState.IDLE,
+                service_pb2.ServiceState.RUNNING,
+            ]:
+                # Cancel existing stream, if it exists
+                if response_stream is not None:
+                    response_stream.cancel()
+                    response_stream = None
+                print("Camera service is not streaming or ready to stream")
+                await asyncio.sleep(0.1)
+                continue
+
+            # Create the stream
+            if response_stream is None:
+                response_stream = client.stream_frames(every_n=self.stream_every_n)
+
+            try:
+                # try/except so app doesn't crash on killed service
+                response: oak_pb2.StreamFramesReply = await response_stream.read()
+                assert response and response != grpc.aio.EOF, "End of stream"
+            except Exception as e:
+                print(e)
+                response_stream.cancel()
+                response_stream = None
+                continue
+
+            # get the sync frame
+            frame: oak_pb2.OakSyncFrame = response.frame
+
+            # get image and show
+            for view_name in ["rgb", "disparity", "left", "right"]:
+                # Skip if view_name was not included in frame
+                try:
+                    # Decode the image and render it in the correct kivy texture
+                    img = self.image_decoder.decode(
+                        getattr(frame, view_name).image_data
+                    )
+                    texture = Texture.create(
+                        size=(img.shape[1], img.shape[0]), icolorfmt="bgr"
+                    )
+                    texture.flip_vertical()
+                    texture.blit_buffer(
+                        img.tobytes(),
+                        colorfmt="bgr",
+                        bufferfmt="ubyte",
+                        mipmap_generation=False,
+                    )
+                    self.image.texture = texture
+
+                except Exception as e:
+                    print(e)
+
 
     def update_noisy_image(self):
         # Generate a random noisy image (300x300 with random values between 0 and 255)
@@ -183,14 +276,20 @@ class TemplateApp(App):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="template-app")
-
+    parser.add_argument("--port", type=int, default=50051, required=False, help="The camera port.")
+    parser.add_argument(
+        "--address", type=str, default="localhost", help="The camera address"
+    )
+    parser.add_argument(
+        "--stream-every-n", type=int, default=1, help="Streaming frequency"
+    )
     # Add additional command line arguments here
     parser.add_argument("--path", type=str, default='/data/data_recording/', required=False, help="The camera port.")
     args = parser.parse_args()
 
     loop = asyncio.get_event_loop()
     try:
-        loop.run_until_complete(TemplateApp(args.path).app_func())
+        loop.run_until_complete(TemplateApp(args.path, args.address, args.port, args.stream_every_n).app_func())
     except asyncio.CancelledError:
         pass
     loop.close()
