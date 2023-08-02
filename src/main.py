@@ -99,7 +99,7 @@ class TemplateApp(App):
         else:
             print("No GPS device found.")
             gps_device = None
-        self.gps = GPS(gps_device, simulation=True)
+        self.gps = GPS(gps_device)
         self.image_decoder = TurboJPEG()
         self.tasks: List[asyncio.Task] = []
         # Generate a timestamp-based filename for the CSV
@@ -171,8 +171,8 @@ class TemplateApp(App):
                 break
             gps_file_name, row = item
             # Writing to sample.json
-            with open(self.new_path + gps_file_name, "w") as outfile:
-                outfile.write(str(self.geo))            
+            # with open(self.new_path + gps_file_name, "w") as outfile:
+            #     outfile.write(str(self.geo))            
             with open(csv_filename, 'a', newline='') as csvfile_image:
                 csv_writer = csv.writer(csvfile_image)
                 csv_writer.writerow(row)
@@ -319,7 +319,7 @@ class TemplateApp(App):
                     self.gps_queue.put(None)
                     self.gps_writer_thread.join()
                     # Once the thread is joined, create a new thread for the next possible round
-                    self.gps_writer_thread = threading.Thread(target=self.write_to_csv, args=('gps_data.csv', self.gps_queue,))
+                    self.gps_writer_thread = threading.Thread(target=self.write_to_csv, args=(self.csv_filename, self.gps_queue,))
                     self.gps_writer_thread.start()
 
                 # Update the marker position on the map
