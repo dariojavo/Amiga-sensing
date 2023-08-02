@@ -38,6 +38,7 @@ from farm_ng.service import service_pb2
 from farm_ng.service.service_client import ClientConfig
 from turbojpeg import TurboJPEG
 import grpc
+import cv2
 
 def get_timestamp_with_milliseconds():
     timestamp = time.time()
@@ -209,43 +210,46 @@ class TemplateApp(App):
             # get the sync frame
             frame: oak_pb2.OakSyncFrame = response.frame
 
+            data: bytes = getattr(frame, "rgb").image_data
+
             # get image and show
-            for view_name in ["rgb", "disparity", "left", "right"]:
-                # Skip if view_name was not included in frame
-                try:
-                    # Decode the image and render it in the correct kivy texture
-                    img = self.image_decoder.decode(
-                        getattr(frame, view_name).image_data
-                    )
-                    texture = Texture.create(
-                        size=(img.shape[1], img.shape[0]), icolorfmt="bgr"
-                    )
-                    texture.flip_vertical()
-                    texture.blit_buffer(
-                        img.tobytes(),
-                        colorfmt="bgr",
-                        bufferfmt="ubyte",
-                        mipmap_generation=False,
-                    )
-                    if port == 50051:
-                        self.image.texture = texture
-                        camera_id = 'oak0'
-                    elif port == 50052:
-                        self.rgb.texture = texture
-                        camera_id = 'oak1'
-                
-                    if self.start_counter:
-                            timestamp, milliseconds = get_timestamp_with_milliseconds()
-                            image_name =  f'/{camera_id}/image_{timestamp}.jpg'
-                            with open(self.csv_filename, 'a', newline='') as csvfile_image:
-                                csv_writer = csv.writer(csvfile_image)
-                                gps_file_name = 'None'#f'image_{camera_id}_{int(timestamp)}_{milliseconds:03d}.jpg'
-                                latitude = 'None'
-                                longitude = 'None'
-                                csv_writer.writerow([timestamp, camera_id, image_name, gps_file_name, latitude, longitude])  
-                            
-                except Exception as e:
-                    print(e)
+            # for view_name in ["rgb", "disparity", "left", "right"]:
+            # Skip if view_name was not included in frame
+            try:
+                # Decode the image and render it in the correct kivy texture
+                img = self.image_decoder.decode(
+                    getattr(frame, "rgb").image_data
+                )
+                texture = Texture.create(
+                    size=(img.shape[1], img.shape[0]), icolorfmt="bgr"
+                )
+                texture.flip_vertical()
+                texture.blit_buffer(
+                    img.tobytes(),
+                    colorfmt="bgr",
+                    bufferfmt="ubyte",
+                    mipmap_generation=False,
+                )
+                if port == 50051:
+                    self.image.texture = texture
+                    camera_id = 'oak0'
+                elif port == 50052:
+                    self.rgb.texture = texture
+                    camera_id = 'oak1'
+            
+                if self.start_counter:
+                        timestamp, milliseconds = get_timestamp_with_milliseconds()
+                        image_name =  f'/{camera_id}/image_{timestamp}.jpg'
+                        cv2.imwrite(self.new_path + image_name, img)
+                        with open(self.csv_filename, 'a', newline='') as csvfile_image:
+                            csv_writer = csv.writer(csvfile_image)
+                            gps_file_name = 'None'#f'image_{camera_id}_{int(timestamp)}_{milliseconds:03d}.jpg'
+                            latitude = 'None'
+                            longitude = 'None'
+                            csv_writer.writerow([timestamp, camera_id, image_name, gps_file_name, latitude, longitude])  
+                        
+            except Exception as e:
+                print(e)
 
     async def update_gps_position(self):
         while self.root is None:
@@ -256,33 +260,34 @@ class TemplateApp(App):
             # You should replace these with real GPS coordinates if available.
 
             self.geo = self.gps.get_gps_data()
-            latitude = self.geo.lat
-            longitude = self.geo.lon
-            timestamp, milliseconds = get_timestamp_with_milliseconds()
-            gps_file_name =  f'/gps/gps_data_{timestamp}.json' 
-            
-            if self.start_counter:
-                # sys.exit()
-            
-                # Writing to sample.json
-                with open(self.new_path + gps_file_name, "w") as outfile:
-                    outfile.write(str(self.geo))
+            if self.geo is not None:
+                latitude = self.geo.lat
+                longitude = self.geo.lon
+                timestamp, milliseconds = get_timestamp_with_milliseconds()
+                gps_file_name =  f'/gps/gps_data_{timestamp}.json' 
                 
-                with open(self.csv_filename, 'a', newline='') as csvfile:
-                        csv_writer = csv.writer(csvfile)
-                        image_name = 'None'#f'image_{camera_id}_{int(timestamp)}_{milliseconds:03d}.jpg'
-                        camera_id = 'None'
-                        image_name = 'None'
-                        csv_writer.writerow([timestamp, camera_id, image_name, gps_file_name, latitude, longitude])                
-            # Update the marker position on the map
-            if self.marker is not None:
-                self.mapview.remove_marker(self.marker)  # Remove previous marker
-            self.marker = MapMarker(lat=latitude, lon=longitude)
-            self.mapview.add_marker(self.marker)
+                if self.start_counter:
+                    # sys.exit()
+                
+                    # Writing to sample.json
+                    with open(self.new_path + gps_file_name, "w") as outfile:
+                        outfile.write(str(self.geo))
+                    
+                    with open(self.csv_filename, 'a', newline='') as csvfile:
+                            csv_writer = csv.writer(csvfile)
+                            image_name = 'None'#f'image_{camera_id}_{int(timestamp)}_{milliseconds:03d}.jpg'
+                            camera_id = 'None'
+                            image_name = 'None'
+                            csv_writer.writerow([timestamp, camera_id, image_name, gps_file_name, latitude, longitude])                
+                # Update the marker position on the map
+                if self.marker is not None:
+                    self.mapview.remove_marker(self.marker)  # Remove previous marker
+                self.marker = MapMarker(lat=latitude, lon=longitude)
+                self.mapview.add_marker(self.marker)
 
-            # Center the map view on the current GPS position
-            self.mapview.center_on(latitude, longitude)
-            self.mapview.zoom = 15
+                # Center the map view on the current GPS position
+                self.mapview.center_on(latitude, longitude)
+                self.mapview.zoom = 15
             await asyncio.sleep(0.1)
             continue
 
