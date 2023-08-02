@@ -165,13 +165,18 @@ class TemplateApp(App):
             queue.task_done()
 
     def write_to_csv(self, csv_filename, gps_queue):
-        with open(csv_filename, 'a', newline='') as csvfile:
-            csv_writer = csv.writer(csvfile)
-            while True:
-                gps_data = gps_queue.get()
-                if gps_data is None:
-                    break
-                csv_writer.writerow(gps_data)
+        while True:
+            item = gps_queue.get()
+            if item is None:
+                break
+            gps_file_name, row = item
+            # Writing to sample.json
+            with open(self.new_path + gps_file_name, "w") as outfile:
+                outfile.write(str(self.geo))            
+            with open(csv_filename, 'a', newline='') as csvfile_image:
+                csv_writer = csv.writer(csvfile_image)
+                csv_writer.writerow(row)
+            gps_queue.task_done()
 
     async def app_func(self):
         async def run_wrapper() -> None:
@@ -181,11 +186,6 @@ class TemplateApp(App):
             for task in self.async_tasks:
                 task.cancel()
    
-        # # Placeholder task
-        # self.async_tasks.append(asyncio.ensure_future(self.template_function()))
-
-        # return await asyncio.gather(run_wrapper(), *self.async_tasks)
-
         # configure the camera client
         config = ClientConfig(address=self.address, port=self.port)
         client = OakCameraClient(config)
@@ -247,9 +247,6 @@ class TemplateApp(App):
 
             data: bytes = getattr(frame, "rgb").image_data
 
-            # get image and show
-            # for view_name in ["rgb", "disparity", "left", "right"]:
-            # Skip if view_name was not included in frame
             try:
                 # Decode the image and render it in the correct kivy texture
                 img = self.image_decoder.decode(
@@ -304,8 +301,6 @@ class TemplateApp(App):
             await asyncio.sleep(0.01)
 
         while True:
-            # In this example, we'll use dummy GPS coordinates.
-            # You should replace these with real GPS coordinates if available.
 
             self.geo = self.gps.get_gps_data()
             if self.geo is not None:
@@ -315,18 +310,18 @@ class TemplateApp(App):
                 gps_file_name =  f'/gps/gps_data_{timestamp}.json' 
                 
                 if self.start_counter:
-                    # sys.exit()
-                
-                    # Writing to sample.json
-                    with open(self.new_path + gps_file_name, "w") as outfile:
-                        outfile.write(str(self.geo))
-                    
-                    with open(self.csv_filename, 'a', newline='') as csvfile:
-                            csv_writer = csv.writer(csvfile)
-                            image_name = 'None'#f'image_{camera_id}_{int(timestamp)}_{milliseconds:03d}.jpg'
-                            camera_id = 'None'
-                            image_name = 'None'
-                            csv_writer.writerow([timestamp, camera_id, image_name, gps_file_name, latitude, longitude])                
+
+                # Prepare data to write
+                    gps_data = [timestamp, 'None', 'None', gps_file_name, latitude, longitude]
+                    self.gps_queue.put((gps_file_name, gps_data))                    
+
+                else:
+                    self.gps_queue.put(None)
+                    self.gps_writer_thread.join()
+                    # Once the thread is joined, create a new thread for the next possible round
+                    self.gps_writer_thread = threading.Thread(target=self.write_to_csv, args=('gps_data.csv', self.gps_queue,))
+                    self.gps_writer_thread.start()
+
                 # Update the marker position on the map
                 if self.marker is not None:
                     self.mapview.remove_marker(self.marker)  # Remove previous marker
