@@ -39,6 +39,9 @@ from farm_ng.service.service_client import ClientConfig
 from turbojpeg import TurboJPEG
 import grpc
 import cv2
+from concurrent.futures import ThreadPoolExecutor
+from queue import Queue
+import threading
 
 def get_timestamp_with_milliseconds():
     timestamp = time.time()
@@ -116,6 +119,16 @@ class TemplateApp(App):
             # Write the header row to the CSV file
             csv_writer.writerow(header)
 
+        self.gps_queue = Queue()
+        self.gps_writer_thread = threading.Thread(target=self.write_to_csv, args=('gps_data.csv', self.gps_queue,))
+        self.gps_writer_thread.start()
+        # Create a queue to hold the images and CSV rows
+        self.image_queue = Queue()
+        self.image_writer_thread = None
+        # At the start of your program, start the thread
+        self.image_writer_thread = threading.Thread(target=self.write_image_and_csv, args=(self.csv_filename, self.image_queue,))
+        self.image_writer_thread.start()
+
     def build(self):
         root =  Builder.load_file("res/main.kv")
         # Right half with a map view
@@ -137,6 +150,28 @@ class TemplateApp(App):
     def on_exit_btn(self) -> None:
         """Kills the running kivy application."""
         App.get_running_app().stop()
+
+    # Define a function that will handle writing to the CSV and saving images
+    def write_image_and_csv(self, filename, queue):
+        while True:
+            item = queue.get()
+            if item is None:
+                break
+            timestamp, camera_id, img, image_path, row = item
+            cv2.imwrite(image_path, img)
+            with open(filename, 'a', newline='') as csvfile_image:
+                csv_writer = csv.writer(csvfile_image)
+                csv_writer.writerow(row)
+            queue.task_done()
+
+    def write_to_csv(self, csv_filename, gps_queue):
+        with open(csv_filename, 'a', newline='') as csvfile:
+            csv_writer = csv.writer(csvfile)
+            while True:
+                gps_data = gps_queue.get()
+                if gps_data is None:
+                    break
+                csv_writer.writerow(gps_data)
 
     async def app_func(self):
         async def run_wrapper() -> None:
@@ -242,16 +277,24 @@ class TemplateApp(App):
                     self.t1 = time.time()
                     camera_id = 'oak1'
                     print('Camera Oak1 Hz:', 1/elapsed1)
+
                 if self.start_counter:
                         timestamp, milliseconds = get_timestamp_with_milliseconds()
                         image_name =  f'/{camera_id}/image_{timestamp}.jpg'
-                        cv2.imwrite(self.new_path + image_name, img)
-                        with open(self.csv_filename, 'a', newline='') as csvfile_image:
-                            csv_writer = csv.writer(csvfile_image)
-                            gps_file_name = 'None'#f'image_{camera_id}_{int(timestamp)}_{milliseconds:03d}.jpg'
-                            latitude = 'None'
-                            longitude = 'None'
-                            csv_writer.writerow([timestamp, camera_id, image_name, gps_file_name, latitude, longitude])  
+                        image_path = self.new_path + image_name
+                        gps_file_name = 'None'#f'image_{camera_id}_{int(timestamp)}_{milliseconds:03d}.jpg'
+                        latitude = 'None'
+                        longitude = 'None'
+                        row = [timestamp, camera_id, image_name, gps_file_name, latitude, longitude]
+                        self.image_queue.put((timestamp, camera_id, img, image_path, row))
+                    # If you want to stop the thread, for example when self.start_counter is False
+                else: 
+                        self.image_queue.put(None)
+                        self.image_writer_thread.join()
+                        # Once the thread is joined, create a new thread for the next possible round
+                        self.image_writer_thread = threading.Thread(target=self.write_image_and_csv, args=(self.csv_filename, self.image_queue,))
+                        self.image_writer_thread.start()
+
                         
             except Exception as e:
                 print(e)
