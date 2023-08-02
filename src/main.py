@@ -59,14 +59,14 @@ class RootWidget(BoxLayout):
             # Create new csv file for data recording
             new_path = self.path
             # Create a folder for saving images specific to the camera ID
-            image_save_path = new_path + '/camera_OAK0/'
+            image_save_path = new_path + '/oak0/'
             os.makedirs(image_save_path, exist_ok=True)
 
             
-            image_save_path =  new_path + '/camera_OAK1/'
+            image_save_path =  new_path + '/oak1/'
             os.makedirs(image_save_path, exist_ok=True)
 
-            gps_save_path = new_path + '/gps-sparkfun/'
+            gps_save_path = new_path + '/gps/'
             os.makedirs(gps_save_path, exist_ok=True)           
 
         else:
@@ -229,9 +229,21 @@ class TemplateApp(App):
                     )
                     if port == 50051:
                         self.image.texture = texture
+                        camera_id = 'oak0'
                     elif port == 50052:
                         self.rgb.texture = texture
+                        camera_id = 'oak1'
                 
+                    if self.start_counter:
+                            timestamp, milliseconds = get_timestamp_with_milliseconds()
+                            image_name =  f'/{camera_id}/image_{timestamp}.jpg'
+                            with open(self.csv_filename, 'a', newline='') as csvfile_image:
+                                csv_writer = csv.writer(csvfile_image)
+                                gps_file_name = 'None'#f'image_{camera_id}_{int(timestamp)}_{milliseconds:03d}.jpg'
+                                latitude = 'None'
+                                longitude = 'None'
+                                csv_writer.writerow([timestamp, camera_id, image_name, gps_file_name, latitude, longitude])  
+                            
                 except Exception as e:
                     print(e)
 
@@ -247,7 +259,7 @@ class TemplateApp(App):
             latitude = self.geo.lat
             longitude = self.geo.lon
             timestamp, milliseconds = get_timestamp_with_milliseconds()
-            gps_file_name =  f'/gps-sparkfun/gps_data_{timestamp}.json' 
+            gps_file_name =  f'/gps/gps_data_{timestamp}.json' 
             
             if self.start_counter:
                 # sys.exit()
@@ -258,9 +270,9 @@ class TemplateApp(App):
                 
                 with open(self.csv_filename, 'a', newline='') as csvfile:
                         csv_writer = csv.writer(csvfile)
-                        image_name = ''#f'image_{camera_id}_{int(timestamp)}_{milliseconds:03d}.jpg'
-                        camera_id = ''
-                        image_name = ''
+                        image_name = 'None'#f'image_{camera_id}_{int(timestamp)}_{milliseconds:03d}.jpg'
+                        camera_id = 'None'
+                        image_name = 'None'
                         csv_writer.writerow([timestamp, camera_id, image_name, gps_file_name, latitude, longitude])                
             # Update the marker position on the map
             if self.marker is not None:
