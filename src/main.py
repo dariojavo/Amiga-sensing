@@ -79,7 +79,7 @@ class TemplateApp(App):
 
     def __init__(self, path: str, address: str, port: int, stream_every_n: int) -> None:
         super().__init__()
-
+        self.t = self.t1 = 0 # erase
         self.counter: int = 0
         self.marker = None  # Initialize the marker attribute
         self.async_tasks: List[asyncio.Task] = []
@@ -206,7 +206,7 @@ class TemplateApp(App):
                 response_stream.cancel()
                 response_stream = None
                 continue
-
+            
             # get the sync frame
             frame: oak_pb2.OakSyncFrame = response.frame
 
@@ -233,10 +233,15 @@ class TemplateApp(App):
                 if port == 50051:
                     self.image.texture = texture
                     camera_id = 'oak0'
+                    elapsed = time.time() - self.t
+                    self.t = time.time()
+                    print('Camera Oak0 Hz:', 1/elapsed)
                 elif port == 50052:
                     self.rgb.texture = texture
+                    elapsed1 = time.time() - self.t1
+                    self.t1 = time.time()
                     camera_id = 'oak1'
-            
+                    print('Camera Oak1 Hz:', 1/elapsed1)
                 if self.start_counter:
                         timestamp, milliseconds = get_timestamp_with_milliseconds()
                         image_name =  f'/{camera_id}/image_{timestamp}.jpg'
