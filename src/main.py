@@ -3,7 +3,7 @@ import argparse
 import asyncio
 import os
 from typing import List
-
+import sys
 from amiga_sensing.GPS import GPS, find_gps_device
 
 # import internal libs
@@ -57,11 +57,7 @@ class RootWidget(BoxLayout):
             self.ids.record_button.text = 'Stop'
             self.ids.record_button.color = [1, 0, 0, 1]  # Change the button's color to red
             # Create new csv file for data recording
-            
-            # Generate a timestamp-based filename for the CSV
-            timestamp = int(time.time())
-            new_path = self.path + f'/Amiga_record_{timestamp}'
-            os.makedirs(new_path, exist_ok= True)
+            new_path = self.path
             # Create a folder for saving images specific to the camera ID
             image_save_path = new_path + '/camera_OAK0/'
             os.makedirs(image_save_path, exist_ok=True)
@@ -70,27 +66,13 @@ class RootWidget(BoxLayout):
             image_save_path =  new_path + '/camera_OAK1/'
             os.makedirs(image_save_path, exist_ok=True)
 
-            global gps_save_path
             gps_save_path = new_path + '/gps-sparkfun/'
             os.makedirs(gps_save_path, exist_ok=True)           
-
-            global csv_filename
-
-            csv_filename = new_path + f'/Amiga_record_{timestamp}.csv'
-    
-            # Header for the CSV file
-            header = ["Timestamp", "Camera ID", "Image Name", "GPS file", "Latitude", "Longitude"]
-
-            # Open the CSV file for writing (in append mode 'a')
-            with open(csv_filename, 'a', newline='') as csvfile:
-                csv_writer = csv.writer(csvfile)
-
-                # Write the header row to the CSV file
-                csv_writer.writerow(header)
 
         else:
             self.ids.record_button.text = 'Record'
             self.ids.record_button.color = [0, 1, 1, .67]  # Change the button's color back to original
+
 class TemplateApp(App):
     """Base class for the main Kivy app."""
 
@@ -116,11 +98,27 @@ class TemplateApp(App):
         self.gps = GPS(gps_device, simulation=True)
         self.image_decoder = TurboJPEG()
         self.tasks: List[asyncio.Task] = []
+        # Generate a timestamp-based filename for the CSV
+        timestamp = int(time.time())
+        self.new_path = self.path + f'/Amiga_record_{timestamp}'
+        os.makedirs(self.new_path, exist_ok= True)
+
+        self.csv_filename = self.new_path + f'/Amiga_record_{timestamp}.csv'
+
+        # Header for the CSV file
+        header = ["Timestamp", "Camera ID", "Image Name", "GPS file", "Latitude", "Longitude"]
+
+        # Open the CSV file for writing (in append mode 'a')
+        with open(self.csv_filename, 'a', newline='') as csvfile:
+            csv_writer = csv.writer(csvfile)
+
+            # Write the header row to the CSV file
+            csv_writer.writerow(header)
 
     def build(self):
         root =  Builder.load_file("res/main.kv")
         # Right half with a map view
-        root = RootWidget(self, path=self.path)
+        root = RootWidget(self, path=self.new_path)
         self.mapview = root.ids.map_view
 
         self.image = root.ids.image
@@ -169,41 +167,6 @@ class TemplateApp(App):
         self.tasks.append(asyncio.ensure_future(self.update_gps_position()))
         return await asyncio.gather(run_wrapper(), *self.tasks) 
 
-    # async def template_function(self) -> None:
-    #     """Placeholder forever loop."""
-    #     while self.root is None:
-    #         await asyncio.sleep(0.01)
-
-    #     while True:
-    #         await asyncio.sleep(1.0)
-    #         async def run_wrapper():
-    #             # we don't actually need to set asyncio as the lib because it is
-    #             # the default, but it doesn't hurt to be explicit
-    #             await self.async_run(async_lib="asyncio")
-    #             for task in self.tasks:
-    #                 task.cancel()
-
-    #         # await asyncio.sleep(1.0)
-
-    #         if self.start_counter:
-    #             # # increment the counter using internal libs and update the gui
-    #             # self.counter = ops.add(self.counter, 1)
-    #             # self.root.ids.counter_label.text = (
-    #             #     f"{'Tic' if self.counter % 2 == 0 else 'Tac'}: {self.counter}"
-    #             # )
-
-    #             # Update the noisy image and map marker
-    #             # self.update_noisy_image()
-    #             self.update_gps_position()
-
-    #             # configure the camera client
-    #             config = ClientConfig(address=self.address, port=self.port)
-    #             client = OakCameraClient(config)
-
-    #             # Stream camera frames
-    #             self.tasks.append(asyncio.ensure_future(self.stream_camera(client)))
-
-    #             return await asyncio.gather(run_wrapper(), *self.tasks)             
 
     async def stream_camera(self, client: OakCameraClient, port) -> None:
         """This task listens to the camera client's stream and populates the tabbed panel with all 4 image streams
@@ -272,28 +235,6 @@ class TemplateApp(App):
                 except Exception as e:
                     print(e)
 
-
-    # def update_noisy_image(self):
-    #     # Generate a random noisy image (300x300 with random values between 0 and 255)
-    #     noise_img = np.random.randint(0, 256, (1920, 1080, 3), dtype=np.uint8)
-
-    #     # Display the noisy image in the left half
-    #     self.display_image(noise_img)
-
-    # def display_image(self, img_array):
-    #     # Convert NumPy array to Kivy Texture
-    #     h, w, _ = img_array.shape
-    #     texture = Texture.create(size=(w, h), colorfmt='rgb')
-
-    #     # Flip the image vertically (Kivy's image origin is bottom-left)
-    #     img_array = np.flipud(img_array)
-
-    #     # Copy the image data to the texture
-    #     texture.blit_buffer(img_array.tobytes(), colorfmt='rgb', bufferfmt='ubyte')
-
-    #     # Set the texture for the Image widget
-    #     self.image.texture = texture
-
     async def update_gps_position(self):
         while self.root is None:
             await asyncio.sleep(0.01)
@@ -302,20 +243,25 @@ class TemplateApp(App):
             # In this example, we'll use dummy GPS coordinates.
             # You should replace these with real GPS coordinates if available.
 
-            self.geo = self.gps.update_gps()
-            latitude = self.geo["lat"]
-            longitude = self.geo["lon"]
+            self.geo = self.gps.get_gps_data()
+            latitude = self.geo.lat
+            longitude = self.geo.lon
             timestamp, milliseconds = get_timestamp_with_milliseconds()
-            gps_file_name = gps_save_path + f'/gps_data_{timestamp}'
-            # Writing to sample.json
-            with open(gps_file_name, "w") as outfile:
-                outfile.write(self.geo)
-            with open(csv_filename, 'a', newline='') as csvfile:
-                    csv_writer = csv.writer(csvfile)
-                    image_name = f'image_{camera_id}_{int(timestamp)}_{milliseconds:03d}.jpg'
-                    camera_id = ''
-                    image_name = ''
-                    csv_writer.writerow([timestamp, camera_id, image_name, gps_file_name, latitude, longitude])                
+            gps_file_name =  f'/gps-sparkfun/gps_data_{timestamp}.json' 
+            
+            if self.start_counter:
+                # sys.exit()
+            
+                # Writing to sample.json
+                with open(self.new_path + gps_file_name, "w") as outfile:
+                    outfile.write(str(self.geo))
+                
+                with open(self.csv_filename, 'a', newline='') as csvfile:
+                        csv_writer = csv.writer(csvfile)
+                        image_name = ''#f'image_{camera_id}_{int(timestamp)}_{milliseconds:03d}.jpg'
+                        camera_id = ''
+                        image_name = ''
+                        csv_writer.writerow([timestamp, camera_id, image_name, gps_file_name, latitude, longitude])                
             # Update the marker position on the map
             if self.marker is not None:
                 self.mapview.remove_marker(self.marker)  # Remove previous marker
