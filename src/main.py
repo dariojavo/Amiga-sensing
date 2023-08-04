@@ -166,12 +166,7 @@ class TemplateApp(App):
 
     def write_image_and_csv(self, filename, queue):
         while not self.stop_threads.is_set():
-            try:
-                item = queue.get_nowait()
-            except Empty:
-                # No item to process, sleep for a bit before trying again
-                time.sleep(0.01)
-                continue
+            item = queue.get()
             if item is None:
                 break
             timestamp, camera_id, img, image_path, row = item
