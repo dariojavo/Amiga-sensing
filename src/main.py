@@ -5,6 +5,7 @@ import os
 from typing import List
 import sys
 from amiga_sensing.GPS import GPS, find_gps_device
+import os
 
 # import internal libs
 
@@ -129,6 +130,32 @@ class TemplateApp(App):
         self.image_writer_thread = threading.Thread(target=self.write_image_and_csv, args=(self.csv_filename, self.image_queue,))
         self.image_writer_thread.start()
 
+    def on_exit_btn(self):
+        """Stops the running kivy application and cancels all running tasks."""
+        # Cancel all running tasks
+        App.get_running_app().stop()
+    #     asyncio.create_task(self.cleanup())
+
+    # async def task_func():
+    #     try:
+    #         while True:
+    #             print("Task is running...")
+    #             await asyncio.sleep(1)  # Simulate doing some work
+    #     except asyncio.CancelledError:
+    #         print("Task was cancelled, cleaning up...")
+    #         # Clean up any resources used by the task here
+    #         raise  # It's important to re-raise the exception to let asyncio know the task was cancelled
+ 
+    # async def cleanup(self):
+    #     for task in asyncio.all_tasks():
+    #         task.cancel()
+    #     await asyncio.gather(*asyncio.all_tasks(), return_exceptions=True)
+    #     print("All tasks have been cancelled and cleaned up.")
+    #     App.get_running_app().stop()  # Stop the Kivy application
+    #     os._exit(0)
+
+
+
     def build(self):
         root =  Builder.load_file("res/main.kv")
         # Right half with a map view
@@ -145,11 +172,6 @@ class TemplateApp(App):
         self.image.keep_ratio = False
         
         return root
-
-
-    def on_exit_btn(self) -> None:
-        """Kills the running kivy application."""
-        App.get_running_app().stop()
 
     # Define a function that will handle writing to the CSV and saving images
     def write_image_and_csv(self, filename, queue):
