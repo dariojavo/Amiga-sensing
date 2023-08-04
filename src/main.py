@@ -41,8 +41,9 @@ from turbojpeg import TurboJPEG
 import grpc
 import cv2
 from concurrent.futures import ThreadPoolExecutor
-from queue import Queue
+from queue import Queue, Empty
 import threading
+import json
 
 def get_timestamp_with_milliseconds():
     timestamp = time.time()
@@ -118,17 +119,10 @@ class TemplateApp(App):
 
             # Write the header row to the CSV file
             csv_writer.writerow(header)
+            
+        # self.stop_threads = threading.Event()
 
-        self.gps_queue = Queue()
-        self.gps_writer_thread = threading.Thread(target=self.write_to_csv, args=('gps_data.csv', self.gps_queue,))
-        self.gps_writer_thread.start()
-        # Create a queue to hold the images and CSV rows
-        self.image_queue = Queue()
-        self.image_writer_thread = None
-        # At the start of your program, start the thread
-        self.image_writer_thread = threading.Thread(target=self.write_image_and_csv, args=(self.csv_filename, self.image_queue,))
-        self.image_writer_thread.start()
-        self.stop_threads = threading.Event()
+
 
     def on_exit_btn(self):
         """Stops the running kivy application and cancels all running tasks."""
@@ -154,11 +148,30 @@ class TemplateApp(App):
         self.image.keep_ratio = False
         
         return root
-
+    
+    def start_threads(self):
+        
+        self.gps_queue = Queue()
+        self.gps_writer_thread = threading.Thread(target=self.write_to_csv, args=('gps_data.csv', self.gps_queue,))
+        self.gps_writer_thread.start()
+        # Create a queue to hold the images and CSV rows
+        self.image_queue = Queue()
+        self.image_writer_thread = None
+        # At the start of your program, start the thread
+        self.image_writer_thread = threading.Thread(target=self.write_image_and_csv, args=(self.csv_filename, self.image_queue,))
+        self.image_writer_thread.start()
+        self.stop_threads = threading.Event() 
+        
     # Define a function that will handle writing to the CSV and saving images
+
     def write_image_and_csv(self, filename, queue):
         while not self.stop_threads.is_set():
-            item = queue.get()
+            try:
+                item = queue.get_nowait()
+            except Empty:
+                # No item to process, sleep for a bit before trying again
+                time.sleep(0.01)
+                continue
             if item is None:
                 break
             timestamp, camera_id, img, image_path, row = item
@@ -175,12 +188,27 @@ class TemplateApp(App):
                 break
             gps_file_name, row = item
             # Writing to sample.json
-            # with open(self.new_path + gps_file_name, "w") as outfile:
-            #     outfile.write(str(self.geo))            
+            gps_sample = {
+                            "year":self.geo.year,
+                            "month":self.geo.month,
+                            "day":self.geo.day,
+                            "hour":self.geo.hour,
+                            "min":self.geo.min,
+                            "sec":self.geo.sec,
+                            "nano":self.geo.nano,
+                            "lon":self.geo.lon,
+                            "lat":self.geo.lat,
+                            "height": self.geo.height,
+                            "headMot":self.geo.headMot,
+            }
+            with open(self.new_path + gps_file_name, "w") as outfile:
+                json.dump(gps_sample, outfile)           
             with open(csv_filename, 'a', newline='') as csvfile_image:
                 csv_writer = csv.writer(csvfile_image)
                 csv_writer.writerow(row)
             gps_queue.task_done()
+
+
 
     async def app_func(self):
         async def run_wrapper() -> None:
@@ -189,8 +217,8 @@ class TemplateApp(App):
             await self.async_run(async_lib="asyncio")
             for task in self.tasks:
                 task.cancel()
-        
 
+        self.start_threads()  # start the threads here
         # configure the camera client
         config = ClientConfig(address=self.address, port=self.port)
         client = OakCameraClient(config)
@@ -349,7 +377,7 @@ if __name__ == "__main__":
         "--stream-every-n", type=int, default=1, help="Streaming frequency"
     )
     # Add additional command line arguments here
-    parser.add_argument("--path", type=str, default='.', required=False, help="The camera port.")
+    parser.add_argument("--path", type=str, default='/data/data_recording', required=False, help="The camera port.")
     args = parser.parse_args()
 
     loop = asyncio.get_event_loop()
