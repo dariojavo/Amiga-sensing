@@ -86,7 +86,6 @@ class TemplateApp(App):
         self.t = self.t1 = 0 # erase
         self.counter: int = 0
         self.marker = None  # Initialize the marker attribute
-        self.async_tasks: List[asyncio.Task] = []
         self.longitude = -122.4194
         self.latitude = 37.7749
         self.start_counter = False
@@ -103,7 +102,7 @@ class TemplateApp(App):
         self.gps = GPS(gps_device)
         self.image_decoder = TurboJPEG()
         self.tasks: List[asyncio.Task] = []
-        # Generate a timestamp-based filename for the CSV
+        # # Generate a timestamp-based filename for the CSV
         timestamp = int(time.time())
         self.new_path = self.path + f'/Amiga_record_{timestamp}'
         os.makedirs(self.new_path, exist_ok= True)
@@ -129,31 +128,13 @@ class TemplateApp(App):
         # At the start of your program, start the thread
         self.image_writer_thread = threading.Thread(target=self.write_image_and_csv, args=(self.csv_filename, self.image_queue,))
         self.image_writer_thread.start()
+        self.stop_threads = threading.Event()
 
     def on_exit_btn(self):
         """Stops the running kivy application and cancels all running tasks."""
         # Cancel all running tasks
+        self.stop_threads.set() #Signal the threads to stop
         App.get_running_app().stop()
-    #     asyncio.create_task(self.cleanup())
-
-    # async def task_func():
-    #     try:
-    #         while True:
-    #             print("Task is running...")
-    #             await asyncio.sleep(1)  # Simulate doing some work
-    #     except asyncio.CancelledError:
-    #         print("Task was cancelled, cleaning up...")
-    #         # Clean up any resources used by the task here
-    #         raise  # It's important to re-raise the exception to let asyncio know the task was cancelled
- 
-    # async def cleanup(self):
-    #     for task in asyncio.all_tasks():
-    #         task.cancel()
-    #     await asyncio.gather(*asyncio.all_tasks(), return_exceptions=True)
-    #     print("All tasks have been cancelled and cleaned up.")
-    #     App.get_running_app().stop()  # Stop the Kivy application
-    #     os._exit(0)
-
 
 
     def build(self):
@@ -175,7 +156,7 @@ class TemplateApp(App):
 
     # Define a function that will handle writing to the CSV and saving images
     def write_image_and_csv(self, filename, queue):
-        while True:
+        while not self.stop_threads.is_set():
             item = queue.get()
             if item is None:
                 break
@@ -187,7 +168,7 @@ class TemplateApp(App):
             queue.task_done()
 
     def write_to_csv(self, csv_filename, gps_queue):
-        while True:
+        while not self.stop_threads.is_set():
             item = gps_queue.get()
             if item is None:
                 break
@@ -205,9 +186,10 @@ class TemplateApp(App):
             # we don't actually need to set asyncio as the lib because it is
             # the default, but it doesn't hurt to be explicit
             await self.async_run(async_lib="asyncio")
-            for task in self.async_tasks:
+            for task in self.tasks:
                 task.cancel()
-   
+        
+
         # configure the camera client
         config = ClientConfig(address=self.address, port=self.port)
         client = OakCameraClient(config)
@@ -217,12 +199,12 @@ class TemplateApp(App):
         client2 = OakCameraClient(config2)
         
         #Start GPS
-        self.gps.start()
+        # self.gps.start()
 
         # Stream camera frames
         self.tasks.append(asyncio.ensure_future(self.stream_camera(client, 50051)))
         self.tasks.append(asyncio.ensure_future(self.stream_camera(client2, 50052)))
-        self.tasks.append(asyncio.ensure_future(self.update_gps_position()))
+        # self.tasks.append(asyncio.ensure_future(self.update_gps_position()))
         return await asyncio.gather(run_wrapper(), *self.tasks) 
 
 
@@ -366,7 +348,7 @@ if __name__ == "__main__":
         "--stream-every-n", type=int, default=1, help="Streaming frequency"
     )
     # Add additional command line arguments here
-    parser.add_argument("--path", type=str, default='/data/data_recording/', required=False, help="The camera port.")
+    parser.add_argument("--path", type=str, default='.', required=False, help="The camera port.")
     args = parser.parse_args()
 
     loop = asyncio.get_event_loop()
@@ -374,4 +356,5 @@ if __name__ == "__main__":
         loop.run_until_complete(TemplateApp(args.path, args.address, args.port, args.stream_every_n).app_func())
     except asyncio.CancelledError:
         pass
+    loop.stop()
     loop.close()
