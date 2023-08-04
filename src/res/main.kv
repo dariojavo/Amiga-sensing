@@ -1,64 +1,31 @@
-<RootWidget>:
-    orientation: 'horizontal'
-
-
-    MapView:
-        id: map_view
-        
-        Button:
-            id: record_button
-            text: 'Start'
-            font_size: '20sp'
-            color: [0, 1, 1, 0.67]
-            size_hint: None, None  # Allow the button to be any size
-            size: 100, 50  # Set a specific button size
-            pos_hint: {'right': 1, 'y': 0}  # Place it bottom-right
-            on_release: 
-                app.root.btn_clk()
-                app.root.record_button = self
-    
-
-    BoxLayout:
-        orientation: 'vertical'
-        size: [1, .25]
-        
-
-        TabbedPanel:
-            pos_hint: {"x": 0.0, "top": 1.0}
-            do_default_tab: False
-            TabbedPanelItem:
-                text: "Rgb"
-                Image:
-                    id: rgb
-            TabbedPanelItem:
-                text: "Disparity"
-                Image:
-                    id: disparity
-            TabbedPanelItem:
-                text: "Left"
-                Image:
-                    id: left
-            TabbedPanelItem:
-                text: "Right"
-                Image:
-                    id: right
-
-        TabbedPanel:
-            pos_hint: {"x": 0.0, "top": 1.0}
-            do_default_tab: False
-            TabbedPanelItem:
-                text: "Rgb"
-                Image:
-                    id: image
-            TabbedPanelItem:
-                text: "Disparity"
-                Image:
-                    id: disparity
-            TabbedPanelItem:
-                text: "Left"
-                Image:
-                    id: left
-            TabbedPanelItem:
-                text: "Right"
-                Image:
-                    id: right
+RelativeLayout:
+    TabbedPanel:
+        pos_hint: {"x": 0.0, "top": 1.0}
+        do_default_tab: False
+        TabbedPanelItem:
+            text: "Rgb"
+            Image:
+                id: rgb
+        TabbedPanelItem:
+            text: "Disparity"
+            Image:
+                id: disparity
+        TabbedPanelItem:
+            text: "Left"
+            Image:
+                id: left
+        TabbedPanelItem:
+            text: "Right"
+            Image:
+                id: right
+    Button:
+        id: back_btn_layout
+        pos_hint: {"x": 0.0, "top": 0.925}
+        background_color: 0, 0, 0, 0
+        size_hint: 0.1, 0.1
+        background_normal: "assets/back_button.png"
+        on_release: app.on_exit_btn()
+        Image:
+            source: "assets/back_button_normal.png" if self.parent.state == "normal" else "assets/back_button_down.png"
+            pos: self.parent.pos
+            size: self.parent.size

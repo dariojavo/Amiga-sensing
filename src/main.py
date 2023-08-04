@@ -39,62 +39,62 @@ from farm_ng.service.service_client import ClientConfig
 from turbojpeg import TurboJPEG
 import grpc
 
-# class in which we are defining action on click
-class RootWidget(BoxLayout):
-    def __init__(self, app, path, **kwargs):
-        super().__init__(**kwargs)
-        self.app = app  # store the app instance
-        self.path = path
+# # class in which we are defining action on click
+# class RootWidget(BoxLayout):
+#     def __init__(self, app, path, **kwargs):
+#         super().__init__(**kwargs)
+#         self.app = app  # store the app instance
+#         self.path = path
 
-    def btn_clk(self):
-        self.app.start_counter = not self.app.start_counter  # Toggle the counter state
-        if self.app.start_counter:
-            self.ids.record_button.text = 'Stop'
-            self.ids.record_button.color = [1, 0, 0, 1]  # Change the button's color to red
-            # Create new csv file for data recording
+#     def btn_clk(self):
+#         self.app.start_counter = not self.app.start_counter  # Toggle the counter state
+#         if self.app.start_counter:
+#             self.ids.record_button.text = 'Stop'
+#             self.ids.record_button.color = [1, 0, 0, 1]  # Change the button's color to red
+#             # Create new csv file for data recording
             
-            # Generate a timestamp-based filename for the CSV
-            timestamp = int(time.time())
-            new_path = self.path + f'/Amiga_record_{timestamp}'
-            os.makedirs(new_path, exist_ok= True)
-            # Create a folder for saving images specific to the camera ID
-            image_save_path = new_path + '/camera_OAK0/'
-            os.makedirs(image_save_path, exist_ok=True)
+#             # Generate a timestamp-based filename for the CSV
+#             timestamp = int(time.time())
+#             new_path = self.path + f'/Amiga_record_{timestamp}'
+#             os.makedirs(new_path, exist_ok= True)
+#             # Create a folder for saving images specific to the camera ID
+#             image_save_path = new_path + '/camera_OAK0/'
+#             os.makedirs(image_save_path, exist_ok=True)
 
-            image_save_path =  new_path + '/camera_OAK1/'
-            os.makedirs(image_save_path, exist_ok=True)
+#             image_save_path =  new_path + '/camera_OAK1/'
+#             os.makedirs(image_save_path, exist_ok=True)
 
-            gps_save_path = new_path + '/gps-sparkfun/'
-            os.makedirs(gps_save_path, exist_ok=True)           
+#             gps_save_path = new_path + '/gps-sparkfun/'
+#             os.makedirs(gps_save_path, exist_ok=True)           
 
-            csv_filename = new_path + f'/Amiga_record_{timestamp}.csv'
+#             csv_filename = new_path + f'/Amiga_record_{timestamp}.csv'
     
-            # Header for the CSV file
-            header = ["Timestamp", "Camera ID", "Image Name", "Latitude", "Longitude"]
+#             # Header for the CSV file
+#             header = ["Timestamp", "Camera ID", "Image Name", "Latitude", "Longitude"]
 
-            # Open the CSV file for writing (in append mode 'a')
-            with open(csv_filename, 'a', newline='') as csvfile:
-                csv_writer = csv.writer(csvfile)
+#             # Open the CSV file for writing (in append mode 'a')
+#             with open(csv_filename, 'a', newline='') as csvfile:
+#                 csv_writer = csv.writer(csvfile)
 
-                # Write the header row to the CSV file
-                csv_writer.writerow(header)
+#                 # Write the header row to the CSV file
+#                 csv_writer.writerow(header)
 
-        else:
-            self.ids.record_button.text = 'Record'
-            self.ids.record_button.color = [0, 1, 1, .67]  # Change the button's color back to original
+#         else:
+#             self.ids.record_button.text = 'Record'
+#             self.ids.record_button.color = [0, 1, 1, .67]  # Change the button's color back to original
 class TemplateApp(App):
     """Base class for the main Kivy app."""
 
     def __init__(self, path: str, address: str, port: int, stream_every_n: int) -> None:
         super().__init__()
 
-        self.counter: int = 0
-        self.marker = None  # Initialize the marker attribute
+        # self.counter: int = 0
+        # self.marker = None  # Initialize the marker attribute
         self.async_tasks: List[asyncio.Task] = []
-        self.longitude = -122.4194
-        self.latitude = 37.7749
-        self.start_counter = False
-        self.path = path
+        # self.longitude = -122.4194
+        # self.latitude = 37.7749
+        # self.start_counter = False
+        # self.path = path
         self.address = address
         self.port = port
         self.stream_every_n = stream_every_n
@@ -106,21 +106,7 @@ class TemplateApp(App):
         self.mapview = None
 
     def build(self):
-        root =  Builder.load_file("res/main.kv")
-        # Right half with a map view
-        root = RootWidget(self, path=self.path)
-        self.mapview = root.ids.map_view
-
-        self.image = root.ids.image
-        self.rgb = root.ids.rgb
-        self.rgb.allow_stretch = True
-        self.rgb.keep_ratio = False
-
-        # self.image.size_hint = (0.5, 1)
-        self.image.allow_stretch = True
-        self.image.keep_ratio = False
-        
-        return root
+        return Builder.load_file("res/main.kv")
 
 
     def on_exit_btn(self) -> None:
@@ -132,7 +118,7 @@ class TemplateApp(App):
             # we don't actually need to set asyncio as the lib because it is
             # the default, but it doesn't hurt to be explicit
             await self.async_run(async_lib="asyncio")
-            for task in self.async_tasks:
+            for task in self.tasks:
                 task.cancel()
 
         # # Placeholder task
@@ -150,7 +136,7 @@ class TemplateApp(App):
 
         # Stream camera frames
         self.tasks.append(asyncio.ensure_future(self.stream_camera(client, 50051)))
-        self.tasks.append(asyncio.ensure_future(self.stream_camera(client2, 50052)))
+        # self.tasks.append(asyncio.ensure_future(self.stream_camera(client2, 50052)))
         # self.tasks.append(asyncio.ensure_future(self.update_gps_position()))
         return await asyncio.gather(run_wrapper(), *self.tasks) 
 
@@ -249,10 +235,10 @@ class TemplateApp(App):
                         bufferfmt="ubyte",
                         mipmap_generation=False,
                     )
-                    if port == 50051:
-                        self.image.texture = texture
-                    elif port == 50052:
-                        self.rgb.texture = texture
+                    # if port == 50051:
+                    #     self.image.texture = texture
+                    # elif port == 50052:
+                    #     self.rgb.texture = texture
                 
                 except Exception as e:
                     print(e)
@@ -279,22 +265,22 @@ class TemplateApp(App):
     #     # Set the texture for the Image widget
     #     self.image.texture = texture
 
-    def update_gps_position(self):
-        # In this example, we'll use dummy GPS coordinates.
-        # You should replace these with real GPS coordinates if available.
-        self.latitude = self.latitude + 0.0001  # San Francisco, CA, USA
-        self.longitude = self.longitude + 0.0001
-        latitude = self.latitude
-        longitude = self.longitude
-        # Update the marker position on the map
-        if self.marker is not None:
-            self.mapview.remove_marker(self.marker)  # Remove previous marker
-        self.marker = MapMarker(lat=latitude, lon=longitude)
-        self.mapview.add_marker(self.marker)
+    # def update_gps_position(self):
+    #     # In this example, we'll use dummy GPS coordinates.
+    #     # You should replace these with real GPS coordinates if available.
+    #     self.latitude = self.latitude + 0.0001  # San Francisco, CA, USA
+    #     self.longitude = self.longitude + 0.0001
+    #     latitude = self.latitude
+    #     longitude = self.longitude
+    #     # Update the marker position on the map
+    #     if self.marker is not None:
+    #         self.mapview.remove_marker(self.marker)  # Remove previous marker
+    #     self.marker = MapMarker(lat=latitude, lon=longitude)
+    #     self.mapview.add_marker(self.marker)
 
-        # Center the map view on the current GPS position
-        self.mapview.center_on(latitude, longitude)
-        self.mapview.zoom = 15
+    #     # Center the map view on the current GPS position
+    #     self.mapview.center_on(latitude, longitude)
+    #     self.mapview.zoom = 15
 
 
 if __name__ == "__main__":
