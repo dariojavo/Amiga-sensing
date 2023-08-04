@@ -357,5 +357,4 @@ if __name__ == "__main__":
         loop.run_until_complete(TemplateApp(args.path, args.address, args.port, args.stream_every_n).app_func())
     except asyncio.CancelledError:
         pass
-    loop.stop()
     loop.close()
