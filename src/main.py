@@ -134,6 +134,7 @@ class TemplateApp(App):
         """Stops the running kivy application and cancels all running tasks."""
         # Cancel all running tasks
         self.stop_threads.set() #Signal the threads to stop
+        self.gps.stop() #Signal to stop gps thread
         App.get_running_app().stop()
 
 
@@ -199,12 +200,12 @@ class TemplateApp(App):
         client2 = OakCameraClient(config2)
         
         #Start GPS
-        # self.gps.start()
+        self.gps.start()
 
         # Stream camera frames
         self.tasks.append(asyncio.ensure_future(self.stream_camera(client, 50051)))
         self.tasks.append(asyncio.ensure_future(self.stream_camera(client2, 50052)))
-        # self.tasks.append(asyncio.ensure_future(self.update_gps_position()))
+        self.tasks.append(asyncio.ensure_future(self.update_gps_position()))
         return await asyncio.gather(run_wrapper(), *self.tasks) 
 
 
