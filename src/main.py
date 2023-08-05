@@ -129,6 +129,11 @@ class TemplateApp(App):
         # Cancel all running tasks
         self.stop_threads.set() #Signal the threads to stop
         self.gps.stop() #Signal to stop gps thread
+        self.image_queue.put(None)
+        self.gps_queue.put(None)
+        self.gps_writer_thread.join()
+        self.image_writer_thread.join()
+
         App.get_running_app().stop()
 
 
@@ -150,7 +155,7 @@ class TemplateApp(App):
         return root
     
     def start_threads(self):
-        
+        self.stop_threads = threading.Event() 
         self.gps_queue = Queue()
         self.gps_writer_thread = threading.Thread(target=self.write_to_csv, args=('gps_data.csv', self.gps_queue,))
         self.gps_writer_thread.start()
@@ -160,7 +165,7 @@ class TemplateApp(App):
         # At the start of your program, start the thread
         self.image_writer_thread = threading.Thread(target=self.write_image_and_csv, args=(self.csv_filename, self.image_queue,))
         self.image_writer_thread.start()
-        self.stop_threads = threading.Event() 
+        
         
     # Define a function that will handle writing to the CSV and saving images
 
