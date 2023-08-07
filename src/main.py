@@ -121,7 +121,7 @@ class TemplateApp(App):
             csv_writer.writerow(header)
             
         # self.stop_threads = threading.Event()
-
+        self.camera_parameters = 0
 
 
     def on_exit_btn(self):
@@ -260,6 +260,58 @@ class TemplateApp(App):
                 print("Camera service is not streaming or ready to stream")
                 await asyncio.sleep(0.1)
                 continue
+
+            # Create a new instance of CameraSettings with desired parameters
+            new_rgb_settings = new_mono_settings = oak_pb2.CameraSettings(
+                auto_exposure=False,         # Set auto exposure
+                exposure_time=10,         # Assume this represents 1000ms or 1 second. Adjust based on your needs.
+                iso_value=100,              # ISO value
+            )
+
+
+            if self.camera_parameters is None and port == 50051:
+
+
+                # Assuming new_rgb_settings is a protobuf object of CameraSettings type
+                client.update_rgb_settings(new_rgb_settings)
+
+                # Similarly for mono camera
+                client.update_mono_settings(new_mono_settings)
+
+                # Send modified settings to the camera
+                response = await client.send_settings()
+
+                # Check the response to ensure that the settings were applied successfully. Handle any errors or issues reported in the response.
+                if response.success:  # This is hypothetical; you'll need to check how your actual response is structured.
+                    print("Settings updated successfully for Oak0!")
+                    self.camera_parameters = True
+                else:
+                    self.camera_parameters = None
+                    print("Failed to update settings Oak0!")
+
+            elif self.camera_parameters is None and port == 50052:
+
+                # Assuming new_rgb_settings is a protobuf object of CameraSettings type
+                client.update_rgb_settings(new_rgb_settings)
+
+                # Similarly for mono camera
+                client.update_mono_settings(new_mono_settings)
+
+                # Send modified settings to the camera
+                response = await client.send_settings()
+
+                # Check the response to ensure that the settings were applied successfully. Handle any errors or issues reported in the response.
+                if response.success:  # This is hypothetical; you'll need to check how your actual response is structured.
+                    print("Settings updated successfully for Oak1!")
+                    self.camera_parameters = True
+                else:
+                    self.camera_parameters = None
+                    print("Failed to update settings Oak1!")
+
+            rgb_settings = client.rgb_settings
+            mono_settings = client.mono_settings       
+            print(rgb_settings)
+            print(mono_settings)
 
             # Create the stream
             if response_stream is None:
