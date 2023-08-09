@@ -185,6 +185,20 @@
                         id: label_val_2
                         text: '0'
 
+                    # USB Dropdown Menu
+                    Label:
+                        text: 'USB Devices'
+                    Button:
+                        id: usb_dropdown_trigger
+                        text: 'Select USB device'
+                        size: 50, 50  # Set a specific button size
+                        size_hint_x: 25.5  # increase this as per your requirement
+                        on_release: app.open_usb_dropdown(self)  # This will open the dropdown on button press
+                    Label:
+                        id: selected_usb_device
+                        text: ''  # This label will display the selected USB device ID
+
+
                     Button:
                         id: save_settings
                         text: 'Save settings'
@@ -193,6 +207,4 @@
                         size_hint: None, None  # Allow the button to be any size
                         size: 200, 50  # Set a specific button size
                         pos_hint: {'right': 1, 'y': 0}  # Place it bottom-right
-                        on_release: 
-                            app.root.btn_clk()
-                            app.root.record_button = self
+                        on_release:

@@ -31,6 +31,8 @@ from kivy.uix.image import Image
 from kivy.clock import Clock
 from kivy.graphics.texture import Texture
 from kivy_garden.mapview import MapView, MapMarker
+from kivy.uix.button import Button
+from kivy.uix.dropdown import DropDown
 import csv
 import time
 from farm_ng.oak import oak_pb2
@@ -44,6 +46,8 @@ from concurrent.futures import ThreadPoolExecutor
 from queue import Queue, Empty
 import threading
 import json
+from pyudev import Context
+import subprocess
 
 def get_timestamp_with_milliseconds():
     timestamp = time.time()
@@ -151,7 +155,7 @@ class TemplateApp(App):
         # self.image.size_hint = (0.5, 1)
         self.image.allow_stretch = True
         self.image.keep_ratio = False
-        
+        self.dropdown = None
         return root
     
     def start_threads(self):
@@ -209,6 +213,32 @@ class TemplateApp(App):
             gps_queue.task_done()
 
 
+    def get_usb_devices(self):
+        # This method will list USB devices. Modify according to your OS.
+        try:
+            result = subprocess.check_output(["lsusb"]).decode("utf-8")
+            devices = [line for line in result.split("\n") if line]
+            return devices
+        except:
+            # In case of error or if the OS doesn't support the 'lsusb' command, return an empty list
+            return []
+
+    def open_usb_dropdown(self, instance):
+        if not self.dropdown:
+            self.dropdown = DropDown()
+
+            usb_devices = self.get_usb_devices()
+            for device in usb_devices:
+                btn = Button(text=device, size_hint_y=None, height=44, font_size='10sp')
+                btn.bind(on_release=lambda btn: self.set_dropdown_value_and_close(btn.text))
+                self.dropdown.add_widget(btn)
+
+        # Opening the dropdown
+        self.dropdown.open(instance)
+
+    def set_dropdown_value_and_close(self, value):
+        self.root.ids.usb_dropdown_trigger.text = value
+        self.dropdown.dismiss()
 
     async def app_func(self):
         async def run_wrapper() -> None:
@@ -429,7 +459,7 @@ if __name__ == "__main__":
         "--stream-every-n", type=int, default=1, help="Streaming frequency"
     )
     # Add additional command line arguments here
-    parser.add_argument("--path", type=str, default='/data/data_recording', required=False, help="The camera port.")
+    parser.add_argument("--path", type=str, default='.', required=False, help="The camera port.")
     args = parser.parse_args()
 
     loop = asyncio.get_event_loop()
