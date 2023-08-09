@@ -126,7 +126,7 @@ class TemplateApp(App):
             
         # self.stop_threads = threading.Event()
         self.camera_parameters = 0
-
+        self.camera_parameters2 = 0
 
     def on_exit_btn(self):
         """Stops the running kivy application and cancels all running tasks."""
@@ -319,7 +319,7 @@ class TemplateApp(App):
                     self.camera_parameters = None
                     print("Failed to update settings Oak0!")
 
-            elif self.camera_parameters is None and port == 50052:
+            elif self.camera_parameters2 is None and port == 50052:
 
                 # Assuming new_rgb_settings is a protobuf object of CameraSettings type
                 client.update_rgb_settings(new_rgb_settings)
@@ -333,9 +333,9 @@ class TemplateApp(App):
                 # Check the response to ensure that the settings were applied successfully. Handle any errors or issues reported in the response.
                 if response.success:  # This is hypothetical; you'll need to check how your actual response is structured.
                     print("Settings updated successfully for Oak1!")
-                    self.camera_parameters = True
+                    self.camera_parameters2 = True
                 else:
-                    self.camera_parameters = None
+                    self.camera_parameters2 = None
                     print("Failed to update settings Oak1!")
 
             rgb_settings = client.rgb_settings
