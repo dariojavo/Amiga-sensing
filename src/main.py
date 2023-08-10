@@ -77,7 +77,7 @@ class TemplateApp(App):
         self.gps = GPS(gps_device, simulation=True)
         self.image_decoder = TurboJPEG()
         self.tasks: List[asyncio.Task] = []
-        self.csv_filename = None  
+        self.csv_filename = 'Amiga'  
         # self.stop_threads = threading.Event()
         self.camera_parameters = 0
         self.camera_parameters2 = 0
@@ -172,7 +172,7 @@ class TemplateApp(App):
     # Define a function that will handle writing to the CSV and saving images
 
     def write_image_and_csv(self, filename, queue):
-        if filename is not None:
+        try:
             while not self.stop_threads.is_set():
                 item = queue.get()
                 if item is None:
@@ -183,9 +183,10 @@ class TemplateApp(App):
                     csv_writer = csv.writer(csvfile_image)
                     csv_writer.writerow(row)
                 queue.task_done()
-
+        except Exception as e:
+            print(f"Exception in write_to_csv: {e}")
     def write_to_csv(self, csv_filename, gps_queue):
-        if csv_filename is not None:
+        try:
             while not self.stop_threads.is_set():
                 item = gps_queue.get()
                 if item is None:
@@ -210,7 +211,8 @@ class TemplateApp(App):
                     csv_writer = csv.writer(csvfile_image)
                     csv_writer.writerow(row)
                 gps_queue.task_done()
-
+        except Exception as e:
+            print(f"Exception in write_to_csv: {e}")
 
     def get_usb_devices(self):
         # This method will list USB devices. Modify according to your OS.
@@ -275,6 +277,7 @@ class TemplateApp(App):
         response_stream = None
 
         while True:
+            print(self.image_writer_thread.is_alive())  # will print True if thread is running, False if it's stopped
             # check the state of the service
             state = await client.get_state()
 
