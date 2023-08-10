@@ -46,7 +46,6 @@ from concurrent.futures import ThreadPoolExecutor
 from queue import Queue, Empty
 import threading
 import json
-from pyudev import Context
 import subprocess
 
 def get_timestamp_with_milliseconds():
