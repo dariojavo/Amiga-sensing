@@ -54,35 +54,6 @@ def get_timestamp_with_milliseconds():
     milliseconds = int((timestamp - int(timestamp)) * 1000)
     return timestamp, milliseconds
 
-# class in which we are defining action on click
-class RootWidget(BoxLayout):
-    def __init__(self, app, path, **kwargs):
-        super().__init__(**kwargs)
-        self.app = app  # store the app instance
-        self.path = path
-
-    def btn_clk(self):
-        self.app.start_counter = not self.app.start_counter  # Toggle the counter state
-        if self.app.start_counter:
-            self.ids.record_button.text = 'Stop'
-            self.ids.record_button.color = [1, 0, 0, 1]  # Change the button's color to red
-            # Create new csv file for data recording
-            new_path = self.path
-            # Create a folder for saving images specific to the camera ID
-            image_save_path = new_path + '/oak0/'
-            os.makedirs(image_save_path, exist_ok=True)
-
-            
-            image_save_path =  new_path + '/oak1/'
-            os.makedirs(image_save_path, exist_ok=True)
-
-            gps_save_path = new_path + '/gps/'
-            os.makedirs(gps_save_path, exist_ok=True)           
-
-        else:
-            self.ids.record_button.text = 'Record'
-            self.ids.record_button.color = [0, 1, 1, .67]  # Change the button's color back to original
-
 class TemplateApp(App):
     """Base class for the main Kivy app."""
 
@@ -104,26 +75,10 @@ class TemplateApp(App):
         else:
             print("No GPS device found.")
             gps_device = None
-        self.gps = GPS(gps_device)
+        self.gps = GPS(gps_device, simulation=True)
         self.image_decoder = TurboJPEG()
         self.tasks: List[asyncio.Task] = []
-        # # Generate a timestamp-based filename for the CSV
-        timestamp = int(time.time())
-        self.new_path = self.path + f'/Amiga_record_{timestamp}'
-        os.makedirs(self.new_path, exist_ok= True)
-
-        self.csv_filename = self.new_path + f'/Amiga_record_{timestamp}.csv'
-
-        # Header for the CSV file
-        header = ["Timestamp", "Camera ID", "Image Name", "GPS file", "Latitude", "Longitude"]
-
-        # Open the CSV file for writing (in append mode 'a')
-        with open(self.csv_filename, 'a', newline='') as csvfile:
-            csv_writer = csv.writer(csvfile)
-
-            # Write the header row to the CSV file
-            csv_writer.writerow(header)
-            
+        self.csv_filename = None  
         # self.stop_threads = threading.Event()
         self.camera_parameters = 0
         self.camera_parameters2 = 0
@@ -140,13 +95,47 @@ class TemplateApp(App):
 
         App.get_running_app().stop()
 
+    def btn_clk(self):
+        self.start_counter = not self.start_counter  # Toggle the counter state
+        if self.start_counter:
+            # # Generate a timestamp-based filename for the CSV
+            timestamp = int(time.time())
+            self.new_path = self.path + f'/Amiga_record_{timestamp}'
+            os.makedirs(self.new_path, exist_ok= True)
+
+            self.csv_filename = self.new_path + f'/Amiga_record_{timestamp}.csv'
+
+            # Header for the CSV file
+            header = ["Timestamp", "Camera ID", "Image Name", "GPS file", "Latitude", "Longitude"]
+
+            # Open the CSV file for writing (in append mode 'a')
+            with open(self.csv_filename, 'a', newline='') as csvfile:
+                csv_writer = csv.writer(csvfile)
+
+                # Write the header row to the CSV file
+                csv_writer.writerow(header)
+            
+            self.root.ids.record_button.text = 'Stop'
+            self.root.ids.record_button.color = [1, 0, 0, 1]  # Change the button's color to red
+            # Create a folder for saving images specific to the camera ID
+            image_save_path = self.new_path + '/oak0/'
+            os.makedirs(image_save_path, exist_ok=True)
+
+            
+            image_save_path =  self.new_path + '/oak1/'
+            os.makedirs(image_save_path, exist_ok=True)
+
+            gps_save_path = self.new_path + '/gps/'
+            os.makedirs(gps_save_path, exist_ok=True)           
+
+        else:
+            self.root.ids.record_button.text = 'Record'
+            self.root.ids.record_button.color = [0, 1, 1, .67]  # Change the button's color back to original
+
 
     def build(self):
         root =  Builder.load_file("res/main.kv")
-        # Right half with a map view
-        root = RootWidget(self, path=self.new_path)
         self.mapview = root.ids.map_view
-
         self.image = root.ids.image
         self.rgb = root.ids.rgb
         self.rgb.allow_stretch = True
@@ -161,7 +150,7 @@ class TemplateApp(App):
     def start_threads(self):
         self.stop_threads = threading.Event() 
         self.gps_queue = Queue()
-        self.gps_writer_thread = threading.Thread(target=self.write_to_csv, args=('gps_data.csv', self.gps_queue,))
+        self.gps_writer_thread = threading.Thread(target=self.write_to_csv, args=(self.csv_filename, self.gps_queue,))
         self.gps_writer_thread.start()
         # Create a queue to hold the images and CSV rows
         self.image_queue = Queue()
@@ -174,43 +163,44 @@ class TemplateApp(App):
     # Define a function that will handle writing to the CSV and saving images
 
     def write_image_and_csv(self, filename, queue):
-        while not self.stop_threads.is_set():
-            item = queue.get()
-            if item is None:
-                break
-            timestamp, camera_id, img, image_path, row = item
-            cv2.imwrite(image_path, img)
-            with open(filename, 'a', newline='') as csvfile_image:
-                csv_writer = csv.writer(csvfile_image)
-                csv_writer.writerow(row)
-            queue.task_done()
+        if filename is not None:
+            while not self.stop_threads.is_set():
+                item = queue.get()
+                if item is None:
+                    break
+                timestamp, camera_id, img, image_path, row = item
+                cv2.imwrite(image_path, img)
+                with open(filename, 'a', newline='') as csvfile_image:
+                    csv_writer = csv.writer(csvfile_image)
+                    csv_writer.writerow(row)
+                queue.task_done()
 
     def write_to_csv(self, csv_filename, gps_queue):
-        while not self.stop_threads.is_set():
-            item = gps_queue.get()
-            if item is None:
-                break
-            gps_file_name, row = item
-            # Writing to sample.json
-            gps_sample = {
-                            "year":self.geo.year,
-                            "month":self.geo.month,
-                            "day":self.geo.day,
-                            "hour":self.geo.hour,
-                            "min":self.geo.min,
-                            "sec":self.geo.sec,
-                            "nano":self.geo.nano,
-                            "lon":self.geo.lon,
-                            "lat":self.geo.lat,
-                            "height": self.geo.height,
-                            "headMot":self.geo.headMot,
-            }
-            with open(self.new_path + gps_file_name, "w") as outfile:
-                json.dump(gps_sample, outfile)           
-            with open(csv_filename, 'a', newline='') as csvfile_image:
-                csv_writer = csv.writer(csvfile_image)
-                csv_writer.writerow(row)
-            gps_queue.task_done()
+        if csv_filename is not None:
+            while not self.stop_threads.is_set():
+                item = gps_queue.get()
+                if item is None:
+                    break
+                gps_file_name, row = item
+                # Writing to sample.json
+                gps_sample = {
+                                "year":self.geo.year,
+                                "month":self.geo.month,
+                                "day":self.geo.day,
+                                "hour":self.geo.hour,
+                                "sec":self.geo.sec,
+                                "nano":self.geo.nano,
+                                "lon":self.geo.lon,
+                                "lat":self.geo.lat,
+                                "height": self.geo.height,
+                                "headMot":self.geo.headMot,
+                }
+                with open(self.new_path + gps_file_name, "w") as outfile:
+                    json.dump(gps_sample, outfile)           
+                with open(csv_filename, 'a', newline='') as csvfile_image:
+                    csv_writer = csv.writer(csvfile_image)
+                    csv_writer.writerow(row)
+                gps_queue.task_done()
 
 
     def get_usb_devices(self):

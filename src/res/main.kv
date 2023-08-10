@@ -1,44 +1,85 @@
-<RootWidget>:
-    ScreenManager:
-        id: screen_manager
+ScreenManager:
+    id: screen_manager
+    
+    Screen:
+        name: 'main_screen'
         
-        Screen:
-            name: 'main_screen'
-            
-            BoxLayout:
-                orientation: 'horizontal'
-            
-                RelativeLayout: 
-                    MapView:
-                        id: map_view
-                    
-                    Button:
-                        id: record_button
-                        text: 'Start'
-                        font_size: '20sp'
-                        color: [0, 1, 1, 0.67]
-                        size_hint: None, None  # Allow the button to be any size
-                        size: 100, 50  # Set a specific button size
-                        pos_hint: {'right': 1, 'y': 0}  # Place it bottom-right
-                        on_release: 
-                            app.root.btn_clk()
-                            app.root.record_button = self
+        BoxLayout:
+            orientation: 'horizontal'
+        
+            RelativeLayout: 
+                MapView:
+                    id: map_view
                 
-                    Button:
-                        id: back_btn_layout
+                Button:
+                    id: record_button
+                    text: 'Start'
+                    font_size: '20sp'
+                    color: [0, 1, 1, 0.67]
+                    size_hint: None, None  # Allow the button to be any size
+                    size: 100, 50  # Set a specific button size
+                    pos_hint: {'right': 1, 'y': 0}  # Place it bottom-right
+                    on_release: 
+                        app.btn_clk()
+                        app.record_button = self
+            
+                Button:
+                    id: back_btn_layout
+                    pos_hint: {"x": 0.0, "top": 1.0}
+                    background_color: 0, 0, 0, 0
+                    size_hint: 0.1, 0.1
+                    background_normal: "assets/back_button.png"
+                    on_release: app.on_exit_btn()
+                    Image:
+                        source: "assets/back_button_normal.png" if self.parent.state == "normal" else "assets/back_button_down.png"
+                        pos: self.parent.pos
+                        size: self.parent.size
+
+            RelativeLayout:  # This RelativeLayout will contain the TabbedPanels and the button
+                size_hint_x: 0.5  # Adjust this as per your design preference
+
+                BoxLayout:
+                    orientation: 'vertical'
+                    size: [1, .25]
+                    
+
+                    TabbedPanel:
                         pos_hint: {"x": 0.0, "top": 1.0}
-                        background_color: 0, 0, 0, 0
-                        size_hint: 0.1, 0.1
-                        background_normal: "assets/back_button.png"
-                        on_release: app.on_exit_btn()
-                        Image:
-                            source: "assets/back_button_normal.png" if self.parent.state == "normal" else "assets/back_button_down.png"
-                            pos: self.parent.pos
-                            size: self.parent.size
+                        do_default_tab: False
+                        TabbedPanelItem:
+                            text: "Rgb Oak1"
+                            Image:
+                                id: rgb
 
-                RelativeLayout:  # This RelativeLayout will contain the TabbedPanels and the button
-                    size_hint_x: 0.5  # Adjust this as per your design preference
+                    TabbedPanel:
+                        pos_hint: {"x": 0.0, "top": 1.0}
+                        do_default_tab: False
+                        TabbedPanelItem:
+                            text: "Rgb Oak0"
+                            Image:
+                                id: image
 
+                Button:
+                    text: 'Camera Settings'
+                    size_hint: None, None
+                    size: 180, 50
+                    pos_hint: {'right': 1, 'bottom': 0}
+                    on_release: screen_manager.current = 'second_screen'
+
+
+    Screen:
+        name: 'second_screen'
+
+        BoxLayout:  # This will organize the RelativeLayout and the GridLayout side by side.
+            orientation: 'horizontal'
+
+            RelativeLayout:  # This RelativeLayout will contain the TabbedPanels and the button
+                size_hint_x: 0.9 # Adjust this as per your design preference
+
+                BoxLayout:
+                    orientation: 'horizontal'
+
+                    # First column for the Image
                     BoxLayout:
                         orientation: 'vertical'
                         size: [1, .25]
@@ -51,6 +92,11 @@
                                 text: "Rgb Oak1"
                                 Image:
                                     id: rgb
+                                
+                            TabbedPanelItem:
+                                text: "Disparity Oak1"
+                                Image:
+                                    id: disparity
 
                         TabbedPanel:
                             pos_hint: {"x": 0.0, "top": 1.0}
@@ -59,152 +105,105 @@
                                 text: "Rgb Oak0"
                                 Image:
                                     id: image
+                            TabbedPanelItem:
+                                text: "Disparity Oak0"
+                                Image:
+                                    id: disparity
 
-                    Button:
-                        text: 'Camera Settings'
-                        size_hint: None, None
-                        size: 180, 50
-                        pos_hint: {'right': 1, 'bottom': 0}
-                        on_release: screen_manager.current = 'second_screen'
+                Button:
+                    text: 'Go to Main Screen'
+                    size_hint: None, None
+                    size: 180, 50
+                    pos_hint: {'right': 1, 'bottom': 0.25}  # You can adjust the position as needed
+                    on_release: screen_manager.current = 'main_screen'
 
-
-        Screen:
-            name: 'second_screen'
-
-            BoxLayout:  # This will organize the RelativeLayout and the GridLayout side by side.
-                orientation: 'horizontal'
-
-                RelativeLayout:  # This RelativeLayout will contain the TabbedPanels and the button
-                    size_hint_x: 0.9 # Adjust this as per your design preference
-
-                    BoxLayout:
-                        orientation: 'horizontal'
-
-                        # First column for the Image
-                        BoxLayout:
-                            orientation: 'vertical'
-                            size: [1, .25]
-                            
-
-                            TabbedPanel:
-                                pos_hint: {"x": 0.0, "top": 1.0}
-                                do_default_tab: False
-                                TabbedPanelItem:
-                                    text: "Rgb Oak1"
-                                    Image:
-                                        id: rgb
-                                    
-                                TabbedPanelItem:
-                                    text: "Disparity Oak1"
-                                    Image:
-                                        id: disparity
-
-                            TabbedPanel:
-                                pos_hint: {"x": 0.0, "top": 1.0}
-                                do_default_tab: False
-                                TabbedPanelItem:
-                                    text: "Rgb Oak0"
-                                    Image:
-                                        id: image
-                                TabbedPanelItem:
-                                    text: "Disparity Oak0"
-                                    Image:
-                                        id: disparity
-
-                    Button:
-                        text: 'Go to Main Screen'
-                        size_hint: None, None
-                        size: 180, 50
-                        pos_hint: {'right': 1, 'bottom': 0.25}  # You can adjust the position as needed
-                        on_release: screen_manager.current = 'main_screen'
-
-                # Second column for attributes, sliders, and values
-                GridLayout:
-                    cols: 3
-                    padding: 10
-                    spacing: 10
+            # Second column for attributes, sliders, and values
+            GridLayout:
+                cols: 3
+                padding: 10
+                spacing: 10
 
 
 
-                    # Attribute 5 with CheckBox
-                    Label:
-                        text: 'Auto Exposure'
-                    CheckBox:
-                        id: checkbox_5
-                        on_active: label_val_5.text = 'Enable' if self.active else 'Disable'
-                    Label:
-                        id: label_val_5
-                        text: 'Disable'
+                # Attribute 5 with CheckBox
+                Label:
+                    text: 'Auto Exposure'
+                CheckBox:
+                    id: checkbox_5
+                    on_active: label_val_5.text = 'Enable' if self.active else 'Disable'
+                Label:
+                    id: label_val_5
+                    text: 'Disable'
 
-                    # Attribute 6 with Slider that can be disabled
-                    Label:
-                        text: 'Exposure time'
-                    Slider:
-                        id: slider_6
-                        min: 0
-                        max: 100
-                        on_value: label_val_6.text = str(int(self.value))
-                        disabled: not checkbox_5.active  # initial state
-                    Label:
-                        id: label_val_6
-                        text: '0'
+                # Attribute 6 with Slider that can be disabled
+                Label:
+                    text: 'Exposure time'
+                Slider:
+                    id: slider_6
+                    min: 0
+                    max: 100
+                    on_value: label_val_6.text = str(int(self.value))
+                    disabled: not checkbox_5.active  # initial state
+                Label:
+                    id: label_val_6
+                    text: '0'
 
-                    # Attribute 10
-                    Label:
-                        text: 'Iso value'
-                    Slider:
-                        id: slider_10
-                        min: 0
-                        max: 100
-                        on_value: label_val_10.text = str(int(self.value))
-                    Label:
-                        id: label_val_10
-                        text: '0'
+                # Attribute 10
+                Label:
+                    text: 'Iso value'
+                Slider:
+                    id: slider_10
+                    min: 0
+                    max: 100
+                    on_value: label_val_10.text = str(int(self.value))
+                Label:
+                    id: label_val_10
+                    text: '0'
 
-                    # Attribute 1
-                    Label:
-                        text: 'Lens pos'
-                    Slider:
-                        id: slider_1
-                        min: 0
-                        max: 100
-                        on_value: label_val_1.text = str(int(self.value))
-                    Label:
-                        id: label_val_1
-                        text: '0'
+                # Attribute 1
+                Label:
+                    text: 'Lens pos'
+                Slider:
+                    id: slider_1
+                    min: 0
+                    max: 100
+                    on_value: label_val_1.text = str(int(self.value))
+                Label:
+                    id: label_val_1
+                    text: '0'
 
-                    # Attribute 2
-                    Label:
-                        text: 'fps'
-                    Slider:
-                        id: slider_2
-                        min: 5
-                        max: 30
-                        on_value: label_val_2.text = str(int(self.value))
-                    Label:
-                        id: label_val_2
-                        text: '0'
+                # Attribute 2
+                Label:
+                    text: 'fps'
+                Slider:
+                    id: slider_2
+                    min: 5
+                    max: 30
+                    on_value: label_val_2.text = str(int(self.value))
+                Label:
+                    id: label_val_2
+                    text: '0'
 
-                    # USB Dropdown Menu
-                    Label:
-                        text: 'USB Devices'
-                    Button:
-                        id: usb_dropdown_trigger
-                        text: 'Select USB device'
-                        size: 50, 50  # Set a specific button size
-                        size_hint_x: 25.5  # increase this as per your requirement
-                        on_release: app.open_usb_dropdown(self)  # This will open the dropdown on button press
-                    Label:
-                        id: selected_usb_device
-                        text: ''  # This label will display the selected USB device ID
+                # USB Dropdown Menu
+                Label:
+                    text: 'USB Devices'
+                Button:
+                    id: usb_dropdown_trigger
+                    text: 'Select USB device'
+                    size: 50, 50  # Set a specific button size
+                    size_hint_x: 25.5  # increase this as per your requirement
+                    on_release: app.open_usb_dropdown(self)  # This will open the dropdown on button press
+                Label:
+                    id: selected_usb_device
+                    text: ''  # This label will display the selected USB device ID
 
 
-                    Button:
-                        id: save_settings
-                        text: 'Save settings'
-                        font_size: '20sp'
-                        color: [0, 1, 1, 0.67]
-                        size_hint: None, None  # Allow the button to be any size
-                        size: 200, 50  # Set a specific button size
-                        pos_hint: {'right': 1, 'y': 0}  # Place it bottom-right
-                        on_release:
+                Button:
+                    id: save_settings
+                    text: 'Save settings'
+                    font_size: '20sp'
+                    color: [0, 1, 1, 0.67]
+                    size_hint: None, None  # Allow the button to be any size
+                    size: 200, 50  # Set a specific button size
+                    pos_hint: {'right': 1, 'y': 0}  # Place it bottom-right
+                    on_release:
