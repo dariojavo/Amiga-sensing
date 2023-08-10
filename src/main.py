@@ -135,14 +135,13 @@ class TemplateApp(App):
     def build(self):
         root =  Builder.load_file("res/main.kv")
         self.mapview = root.ids.map_view
-        self.image = root.ids.image
         self.oak1 = root.ids.oak1
         self.oak1.allow_stretch = True
         self.oak1.keep_ratio = False
 
-        # self.image.size_hint = (0.5, 1)
-        self.image.allow_stretch = True
-        self.image.keep_ratio = False
+        self.oak0 = root.ids.oak0
+        self.oak0.allow_stretch = True
+        self.oak0.keep_ratio = False
         self.dropdown = None
         return root
     
@@ -367,7 +366,7 @@ class TemplateApp(App):
                     mipmap_generation=False,
                 )
                 if port == 50051:
-                    self.image.texture = texture
+                    self.oak0.texture = texture
                     camera_id = 'oak0'
                     elapsed = time.time() - self.t
                     self.t = time.time()
