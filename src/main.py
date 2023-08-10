@@ -136,9 +136,9 @@ class TemplateApp(App):
         root =  Builder.load_file("res/main.kv")
         self.mapview = root.ids.map_view
         self.image = root.ids.image
-        self.rgb = root.ids.rgb
-        self.rgb.allow_stretch = True
-        self.rgb.keep_ratio = False
+        self.oak1 = root.ids.oak1
+        self.oak1.allow_stretch = True
+        self.oak1.keep_ratio = False
 
         # self.image.size_hint = (0.5, 1)
         self.image.allow_stretch = True
@@ -373,7 +373,7 @@ class TemplateApp(App):
                     self.t = time.time()
                     print('Camera Oak0 Hz:', 1/elapsed)
                 elif port == 50052:
-                    self.rgb.texture = texture
+                    self.oak1.texture = texture
                     elapsed1 = time.time() - self.t1
                     self.t1 = time.time()
                     camera_id = 'oak1'
