@@ -134,7 +134,9 @@ class TemplateApp(App):
 
     def build(self):
         root =  Builder.load_file("res/main.kv")
+        
         self.mapview = root.ids.map_view
+        
         self.oak1 = root.ids.oak1
         self.oak1.allow_stretch = True
         self.oak1.keep_ratio = False
@@ -142,6 +144,15 @@ class TemplateApp(App):
         self.oak0 = root.ids.oak0
         self.oak0.allow_stretch = True
         self.oak0.keep_ratio = False
+
+        self.oak1_d = root.ids.oak1_disparity
+        self.oak1_d.allow_stretch = True
+        self.oak1_d.keep_ratio = False
+
+        self.oak0_d = root.ids.oak0_disparity
+        self.oak0_d.allow_stretch = True
+        self.oak0_d.keep_ratio = False
+
         self.dropdown = None
         return root
     
@@ -348,56 +359,62 @@ class TemplateApp(App):
             # get the sync frame
             frame: oak_pb2.OakSyncFrame = response.frame
 
-            data: bytes = getattr(frame, "rgb").image_data
+            # data: bytes = getattr(frame, "rgb").image_data
+            for view_name in ["rgb", "disparity"]:
+                try:
+                    # Decode the image and render it in the correct kivy texture
+                    img = self.image_decoder.decode(
+                        getattr(frame, view_name).image_data
+                    )
+                    texture = Texture.create(
+                        size=(img.shape[1], img.shape[0]), icolorfmt="bgr"
+                    )
+                    texture.flip_vertical()
+                    texture.blit_buffer(
+                        img.tobytes(),
+                        colorfmt="bgr",
+                        bufferfmt="ubyte",
+                        mipmap_generation=False,
+                    )
+                    if port == 50051:
+                        if view_name == 'rgb':
+                            self.oak0.texture = texture
+                        else:
+                            self.oak0_d.texture = texture
+                        camera_id = 'oak0'
+                        elapsed = time.time() - self.t
+                        self.t = time.time()
+                        print('Camera Oak0 Hz:', 1/elapsed)
+                    elif port == 50052:
+                        if view_name == 'rgb':
+                            self.oak1.texture = texture
+                        else:
+                            self.oak1_d.texture = texture
+                        elapsed1 = time.time() - self.t1
+                        self.t1 = time.time()
+                        camera_id = 'oak1'
+                        print('Camera Oak1 Hz:', 1/elapsed1)
 
-            try:
-                # Decode the image and render it in the correct kivy texture
-                img = self.image_decoder.decode(
-                    getattr(frame, "rgb").image_data
-                )
-                texture = Texture.create(
-                    size=(img.shape[1], img.shape[0]), icolorfmt="bgr"
-                )
-                texture.flip_vertical()
-                texture.blit_buffer(
-                    img.tobytes(),
-                    colorfmt="bgr",
-                    bufferfmt="ubyte",
-                    mipmap_generation=False,
-                )
-                if port == 50051:
-                    self.oak0.texture = texture
-                    camera_id = 'oak0'
-                    elapsed = time.time() - self.t
-                    self.t = time.time()
-                    print('Camera Oak0 Hz:', 1/elapsed)
-                elif port == 50052:
-                    self.oak1.texture = texture
-                    elapsed1 = time.time() - self.t1
-                    self.t1 = time.time()
-                    camera_id = 'oak1'
-                    print('Camera Oak1 Hz:', 1/elapsed1)
+                    if self.start_counter:
+                            timestamp, milliseconds = get_timestamp_with_milliseconds()
+                            image_name =  f'/{camera_id}/image_{timestamp}.jpg'
+                            image_path = self.new_path + image_name
+                            gps_file_name = 'None'#f'image_{camera_id}_{int(timestamp)}_{milliseconds:03d}.jpg'
+                            latitude = 'None'
+                            longitude = 'None'
+                            row = [timestamp, camera_id, image_name, gps_file_name, latitude, longitude]
+                            self.image_queue.put((timestamp, camera_id, img, image_path, row))
+                        # If you want to stop the thread, for example when self.start_counter is False
+                    else: 
+                            self.image_queue.put(None)
+                            self.image_writer_thread.join()
+                            # Once the thread is joined, create a new thread for the next possible round
+                            self.image_writer_thread = threading.Thread(target=self.write_image_and_csv, args=(self.csv_filename, self.image_queue,))
+                            self.image_writer_thread.start()
 
-                if self.start_counter:
-                        timestamp, milliseconds = get_timestamp_with_milliseconds()
-                        image_name =  f'/{camera_id}/image_{timestamp}.jpg'
-                        image_path = self.new_path + image_name
-                        gps_file_name = 'None'#f'image_{camera_id}_{int(timestamp)}_{milliseconds:03d}.jpg'
-                        latitude = 'None'
-                        longitude = 'None'
-                        row = [timestamp, camera_id, image_name, gps_file_name, latitude, longitude]
-                        self.image_queue.put((timestamp, camera_id, img, image_path, row))
-                    # If you want to stop the thread, for example when self.start_counter is False
-                else: 
-                        self.image_queue.put(None)
-                        self.image_writer_thread.join()
-                        # Once the thread is joined, create a new thread for the next possible round
-                        self.image_writer_thread = threading.Thread(target=self.write_image_and_csv, args=(self.csv_filename, self.image_queue,))
-                        self.image_writer_thread.start()
-
-                        
-            except Exception as e:
-                print(e)
+                            
+                except Exception as e:
+                    print(e)
 
     async def update_gps_position(self):
         while self.root is None:

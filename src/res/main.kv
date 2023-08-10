@@ -7,7 +7,8 @@ ScreenManager:
         BoxLayout:
             orientation: 'horizontal'
         
-            RelativeLayout: 
+            RelativeLayout:
+                size_hint_x: 0.5 # Adjust this as per your design preference 
                 MapView:
                     id: map_view
                 
@@ -50,7 +51,10 @@ ScreenManager:
                             text: "Rgb Oak1"
                             Image:
                                 id: oak1
-
+                        TabbedPanelItem:
+                            text: "Disparity"
+                            Image:
+                                id: oak1_disparity
                     TabbedPanel:
                         pos_hint: {"x": 0.0, "top": 1.0}
                         do_default_tab: False
@@ -58,7 +62,10 @@ ScreenManager:
                             text: "Rgb Oak0"
                             Image:
                                 id: oak0
-
+                        TabbedPanelItem:
+                            text: "Disparity"
+                            Image:
+                                id: oak0_disparity
                 Button:
                     text: 'Camera Settings'
                     size_hint: None, None
@@ -96,7 +103,7 @@ ScreenManager:
                             TabbedPanelItem:
                                 text: "Disparity Oak1"
                                 Image:
-                                    id: disparity1
+                                    id: oak1_disparity2
 
                         TabbedPanel:
                             pos_hint: {"x": 0.0, "top": 1.0}
@@ -108,7 +115,7 @@ ScreenManager:
                             TabbedPanelItem:
                                 text: "Disparity Oak0"
                                 Image:
-                                    id: disparity0
+                                    id: oak0_disparity2
 
                 Button:
                     text: 'Go to Main Screen'
