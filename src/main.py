@@ -382,25 +382,25 @@ class TemplateApp(App):
                     if port == 50051:
                         if view_name == 'rgb':
                             self.oak0.texture = texture
+                            elapsed = time.time() - self.t
+                            self.t = time.time()
+                            print('Camera Oak0 Hz:', 1/elapsed)
                         else:
                             self.oak0_d.texture = texture
                         camera_id = 'oak0'
-                        elapsed = time.time() - self.t
-                        self.t = time.time()
-                        print('Camera Oak0 Hz:', 1/elapsed)
                     elif port == 50052:
                         if view_name == 'rgb':
                             self.oak1.texture = texture
+                            elapsed1 = time.time() - self.t1
+                            self.t1 = time.time()
+                            print('Camera Oak1 Hz:', 1/elapsed1)
                         else:
                             self.oak1_d.texture = texture
-                        elapsed1 = time.time() - self.t1
-                        self.t1 = time.time()
                         camera_id = 'oak1'
-                        print('Camera Oak1 Hz:', 1/elapsed1)
 
                     if self.start_counter:
                             timestamp, milliseconds = get_timestamp_with_milliseconds()
-                            image_name =  f'/{camera_id}/image_{timestamp}.jpg'
+                            image_name =  f'/{camera_id}/{view_name}_image_{timestamp}.jpg'
                             image_path = self.new_path + image_name
                             gps_file_name = 'None'#f'image_{camera_id}_{int(timestamp)}_{milliseconds:03d}.jpg'
                             latitude = 'None'
