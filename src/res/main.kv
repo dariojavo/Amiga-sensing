@@ -136,7 +136,8 @@ ScreenManager:
                 Label:
                     text: 'Auto Exposure'
                 CheckBox:
-                    id: checkbox_5
+                    id: auto_exposure
+                    active: True
                     on_active: label_val_5.text = 'Enable' if self.active else 'Disable'
                 Label:
                     id: label_val_5
@@ -146,11 +147,12 @@ ScreenManager:
                 Label:
                     text: 'Exposure time'
                 Slider:
-                    id: slider_6
+                    id: exposure_time
                     min: 0
-                    max: 100
+                    max: 20000
+                    value: 10000
                     on_value: label_val_6.text = str(int(self.value))
-                    disabled: not checkbox_5.active  # initial state
+                    disabled: not auto_exposure.active  # initial state
                 Label:
                     id: label_val_6
                     text: '0'
@@ -159,9 +161,10 @@ ScreenManager:
                 Label:
                     text: 'Iso value'
                 Slider:
-                    id: slider_10
+                    id: iso
                     min: 0
                     max: 100
+                    value: 50
                     on_value: label_val_10.text = str(int(self.value))
                 Label:
                     id: label_val_10
