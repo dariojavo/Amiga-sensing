@@ -345,20 +345,27 @@ class TemplateApp(App):
                 #     iso_value = int(Update_camera_values['iso_value']),              # ISO value
                 #     lens_pos = int(Update_camera_values['lens_pos'])
                 # )
-                
-                # # Assuming new_rgb_settings is a protobuf object of CameraSettings type
-                # client.update_rgb_settings(new_rgb_settings)
 
-                # # Similarly for mono camera
-                # client.update_mono_settings(new_mono_settings)
+                # Create a new instance of CameraSettings with desired parameters
+                new_rgb_settings = new_mono_settings = oak_pb2.CameraSettings(
+                    auto_exposure = False,         # Set auto exposure
+                    exposure_time = 1000,         # Assume this represents 1000ms or 1 second. Adjust based on your needs.
+                    iso_value = 1000              # ISO value
+                )
+                               
+                # Assuming new_rgb_settings is a protobuf object of CameraSettings type
+                client.update_rgb_settings(new_rgb_settings)
 
-                # # Send modified settings to the camera
-                # response = await client.send_settings()
+                # Similarly for mono camera
+                client.update_mono_settings(new_mono_settings)
+                await asyncio.sleep(1)
+                # Send modified settings to the camera
+                response = await client.send_settings()
 
-                # if response:
-                #     print('Ok, parameters have been updated')
+                if response:
+                    print(f"Ok, parameters have been updated for {port}")
 
-                response_stream = client.stream_frames(every_n=self.stream_every_n)
+                response_stream = client.stream_frames(every_n=1)
 
             try:
                 # try/except so app doesn't crash on killed service
