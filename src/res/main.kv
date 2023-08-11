@@ -137,7 +137,7 @@ ScreenManager:
                     text: 'Auto Exposure'
                 CheckBox:
                     id: auto_exposure
-                    active: True
+                    active: False
                     on_active: label_val_5.text = 'Enable' if self.active else 'Disable'
                 Label:
                     id: label_val_5
@@ -153,10 +153,10 @@ ScreenManager:
                     value: 10000
                     step: 1
                     on_value: label_val_6.text = str(int(self.value))
-                    disabled: not auto_exposure.active  # initial state
+                    disabled: auto_exposure.active  # initial state
                 Label:
                     id: label_val_6
-                    text: '0'
+                    text: str(int(exposure_time.value))
 
                 # Attribute 10
                 Label:
@@ -170,7 +170,7 @@ ScreenManager:
                     on_value: label_val_10.text = str(int(self.value))
                 Label:
                     id: label_val_10
-                    text: '0'
+                    text: str(int(iso.value))
 
                 # Attribute 1
                 Label:
@@ -184,7 +184,7 @@ ScreenManager:
                     on_value: label_val_1.text = str(int(self.value))
                 Label:
                     id: label_val_1
-                    text: '0'
+                    text: str(int(lens.value))
 
                 # Attribute 2
                 Label:
@@ -198,7 +198,7 @@ ScreenManager:
                     on_value: label_val_2.text = str(int(self.value))
                 Label:
                     id: label_val_2
-                    text: '0'
+                    text: str(int(fps.value))
 
                 # USB Dropdown Menu
                 Label:
