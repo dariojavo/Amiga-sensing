@@ -47,11 +47,14 @@ from queue import Queue, Empty
 import threading
 import json
 import subprocess
+from kivy.properties import NumericProperty
+from kivy.uix.screenmanager import Screen
 
 def get_timestamp_with_milliseconds():
     timestamp = time.time()
     milliseconds = int((timestamp - int(timestamp)) * 1000)
     return timestamp, milliseconds
+
 
 class TemplateApp(App):
     """Base class for the main Kivy app."""
@@ -172,6 +175,7 @@ class TemplateApp(App):
         self.oak0_d_2.keep_ratio = False
 
         self.dropdown = None
+
         return root
     
     def start_threads(self):
@@ -298,7 +302,16 @@ class TemplateApp(App):
             print(self.image_writer_thread.is_alive())  # will print True if thread is running, False if it's stopped
             # check the state of the service
             state = await client.get_state()
-
+            
+            # Update_camera_values = {
+            # 'auto_exposure': self.root.ids.auto_exposure.active,
+            # 'exposure_time': self.root.ids.exposure_time.value,
+            # 'iso_value': self.root.ids.iso.value,
+            # 'lens_pos' : self.root.ids.lens.value,
+            # 'fps' : self.root.ids.fps.value
+            # }
+            
+            # print(Update_camera_values)
             if state.value not in [
                 service_pb2.ServiceState.IDLE,
                 service_pb2.ServiceState.RUNNING,
@@ -311,16 +324,24 @@ class TemplateApp(App):
                 await asyncio.sleep(0.1)
                 continue
 
+            Update_camera_values = {
+            'auto_exposure': self.root.ids.auto_exposure.active,
+            'exposure_time': self.root.ids.exposure_time.value,
+            'iso_value': self.root.ids.iso.value,
+            'lens_pos' : self.root.ids.lens.value,
+            'fps' : self.root.ids.fps.value
+            }
+            
+            print(Update_camera_values.auto_exposure)
+            
             # Create a new instance of CameraSettings with desired parameters
             new_rgb_settings = new_mono_settings = oak_pb2.CameraSettings(
-                auto_exposure=self.root.ids['auto_exposure'].active,         # Set auto exposure
-                exposure_time=int(self.root.ids['exposure_time'].value),         # Assume this represents 1000ms or 1 second. Adjust based on your needs.
-                iso_value=100,              # ISO value
+                auto_exposure = Update_camera_values['auto_exposure'],         # Set auto exposure
+                exposure_time = Update_camera_values['exposure_time'],         # Assume this represents 1000ms or 1 second. Adjust based on your needs.
+                iso_value = Update_camera_values['iso_value'],              # ISO value
+                lens_pos = Update_camera_values['lens_pos']
             )
             
-            print(self.root.ids['auto_exposure'].active,         # Set auto exposure
-                int(self.root.ids['exposure_time'].value))         # Assume this represents 1000ms or 1 second. Adjust based on your needs.
-
             # Assuming new_rgb_settings is a protobuf object of CameraSettings type
             client.update_rgb_settings(new_rgb_settings)
 
@@ -330,63 +351,9 @@ class TemplateApp(App):
             # Send modified settings to the camera
             response = await client.send_settings()
                 
-            # if self.camera_parameters is False and port == 50051:
-
-
-            #     # Assuming new_rgb_settings is a protobuf object of CameraSettings type
-            #     client.update_rgb_settings(new_rgb_settings)
-
-            #     # Similarly for mono camera
-            #     client.update_mono_settings(new_mono_settings)
-
-            #     # Send modified settings to the camera
-            #     response = await client.send_settings()
-
-            #     # Check the response to ensure that the settings were applied successfully. Handle any errors or issues reported in the response.
-            #     if response.success:  # This is hypothetical; you'll need to check how your actual response is structured.
-            #         print("Settings updated successfully for Oak0!")
-            #         self.camera_parameters = True
-            #     else:
-            #         self.camera_parameters = False
-            #         print("Failed to update settings Oak0!")
-
-            # elif self.camera_parameters2 is False and port == 50052:
-
-            #     # Assuming new_rgb_settings is a protobuf object of CameraSettings type
-            #     client.update_rgb_settings(new_rgb_settings)
-
-            #     # Similarly for mono camera
-            #     client.update_mono_settings(new_mono_settings)
-
-            #     # Send modified settings to the camera
-            #     response = await client.send_settings()
-
-            #     # Check the response to ensure that the settings were applied successfully. Handle any errors or issues reported in the response.
-            #     if response.success:  # This is hypothetical; you'll need to check how your actual response is structured.
-            #         print("Settings updated successfully for Oak1!")
-            #         self.camera_parameters2 = True
-            #     else:
-            #         self.camera_parameters2 = False
-            #         print("Failed to update settings Oak1!")
-
-            # rgb_settings = client.rgb_settings
-            # mono_settings = client.mono_settings       
-            # print(rgb_settings.auto_exposure)
-            # print(mono_settings)
-
-            # if rgb_settings.auto_exposure:
-            #     self.camera_parameters2 = self.camera_parameters = False
-            #     # Assuming new_rgb_settings is a protobuf object of CameraSettings type
-            #     client.update_rgb_settings(new_rgb_settings)
-
-            #     # Similarly for mono camera
-            #     client.update_mono_settings(new_mono_settings)
-
-            #     # Send modified settings to the camera
-            #     response = await client.send_settings()
             # Create the stream
             if response_stream is None:
-                response_stream = client.stream_frames(every_n=self.stream_every_n)
+                response_stream = client.stream_frames(every_n=Update_camera_values['fps'])
 
             try:
                 # try/except so app doesn't crash on killed service

@@ -151,6 +151,7 @@ ScreenManager:
                     min: 0
                     max: 20000
                     value: 10000
+                    step: 1
                     on_value: label_val_6.text = str(int(self.value))
                     disabled: not auto_exposure.active  # initial state
                 Label:
@@ -165,6 +166,7 @@ ScreenManager:
                     min: 0
                     max: 100
                     value: 50
+                    step: 1
                     on_value: label_val_10.text = str(int(self.value))
                 Label:
                     id: label_val_10
@@ -174,9 +176,11 @@ ScreenManager:
                 Label:
                     text: 'Lens pos'
                 Slider:
-                    id: slider_1
+                    id: lens
                     min: 0
                     max: 100
+                    value: 10
+                    step: 1
                     on_value: label_val_1.text = str(int(self.value))
                 Label:
                     id: label_val_1
@@ -186,9 +190,11 @@ ScreenManager:
                 Label:
                     text: 'fps'
                 Slider:
-                    id: slider_2
+                    id: fps
                     min: 5
                     max: 30
+                    value: 10
+                    step: 1
                     on_value: label_val_2.text = str(int(self.value))
                 Label:
                     id: label_val_2
