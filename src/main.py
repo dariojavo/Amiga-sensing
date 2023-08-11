@@ -79,8 +79,8 @@ class TemplateApp(App):
         self.tasks: List[asyncio.Task] = []
         self.csv_filename = 'Amiga'  
         # self.stop_threads = threading.Event()
-        self.camera_parameters = 0
-        self.camera_parameters2 = 0
+        self.camera_parameters = False
+        self.camera_parameters2 = False
 
     def on_exit_btn(self):
         """Stops the running kivy application and cancels all running tasks."""
@@ -319,7 +319,7 @@ class TemplateApp(App):
             )
 
 
-            if self.camera_parameters is None and port == 50051:
+            if self.camera_parameters is False and port == 50051:
 
 
                 # Assuming new_rgb_settings is a protobuf object of CameraSettings type
@@ -336,10 +336,10 @@ class TemplateApp(App):
                     print("Settings updated successfully for Oak0!")
                     self.camera_parameters = True
                 else:
-                    self.camera_parameters = None
+                    self.camera_parameters = False
                     print("Failed to update settings Oak0!")
 
-            elif self.camera_parameters2 is None and port == 50052:
+            elif self.camera_parameters2 is False and port == 50052:
 
                 # Assuming new_rgb_settings is a protobuf object of CameraSettings type
                 client.update_rgb_settings(new_rgb_settings)
@@ -355,14 +355,16 @@ class TemplateApp(App):
                     print("Settings updated successfully for Oak1!")
                     self.camera_parameters2 = True
                 else:
-                    self.camera_parameters2 = None
+                    self.camera_parameters2 = False
                     print("Failed to update settings Oak1!")
 
             rgb_settings = client.rgb_settings
             mono_settings = client.mono_settings       
-            print(rgb_settings)
+            print(rgb_settings.auto_exposure)
             print(mono_settings)
 
+            if rgb_settings.auto_exposure:
+                self.camera_parameters2 = self.camera_parameters = False
             # Create the stream
             if response_stream is None:
                 response_stream = client.stream_frames(every_n=self.stream_every_n)
