@@ -153,6 +153,24 @@ class TemplateApp(App):
         self.oak0_d.allow_stretch = True
         self.oak0_d.keep_ratio = False
 
+        #For the camera parameters screen
+
+        self.oak1_2 = root.ids.oak1_2
+        self.oak1_2.allow_stretch = True
+        self.oak1_2.keep_ratio = False
+
+        self.oak0_2 = root.ids.oak0_2
+        self.oak0_2.allow_stretch = True
+        self.oak0_2.keep_ratio = False
+
+        self.oak1_d_2 = root.ids.oak1_disparity2
+        self.oak1_d_2.allow_stretch = True
+        self.oak1_d_2.keep_ratio = False
+
+        self.oak0_d_2 = root.ids.oak0_disparity2
+        self.oak0_d_2.allow_stretch = True
+        self.oak0_d_2.keep_ratio = False
+
         self.dropdown = None
         return root
     
@@ -382,20 +400,24 @@ class TemplateApp(App):
                     if port == 50051:
                         if view_name == 'rgb':
                             self.oak0.texture = texture
+                            self.oak0_2.texture = texture
                             elapsed = time.time() - self.t
                             self.t = time.time()
                             print('Camera Oak0 Hz:', 1/elapsed)
                         else:
                             self.oak0_d.texture = texture
+                            self.oak0_d_2.texture = texture
                         camera_id = 'oak0'
                     elif port == 50052:
                         if view_name == 'rgb':
                             self.oak1.texture = texture
+                            self.oak1_2.texture = texture
                             elapsed1 = time.time() - self.t1
                             self.t1 = time.time()
                             print('Camera Oak1 Hz:', 1/elapsed1)
                         else:
                             self.oak1_d.texture = texture
+                            self.oak1_d_2.texture = texture
                         camera_id = 'oak1'
 
                     if self.start_counter:
