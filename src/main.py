@@ -312,6 +312,7 @@ class TemplateApp(App):
             # }
             
             # print(Update_camera_values)
+                
             if state.value not in [
                 service_pb2.ServiceState.IDLE,
                 service_pb2.ServiceState.RUNNING,
@@ -324,36 +325,40 @@ class TemplateApp(App):
                 await asyncio.sleep(0.1)
                 continue
 
-            Update_camera_values = {
-            'auto_exposure': self.root.ids.auto_exposure.active,
-            'exposure_time': self.root.ids.exposure_time.value,
-            'iso_value': self.root.ids.iso.value,
-            'lens_pos' : self.root.ids.lens.value,
-            'fps' : self.root.ids.fps.value
-            }
-            
-            print(Update_camera_values.auto_exposure)
-            
-            # Create a new instance of CameraSettings with desired parameters
-            new_rgb_settings = new_mono_settings = oak_pb2.CameraSettings(
-                auto_exposure = Update_camera_values['auto_exposure'],         # Set auto exposure
-                exposure_time = Update_camera_values['exposure_time'],         # Assume this represents 1000ms or 1 second. Adjust based on your needs.
-                iso_value = Update_camera_values['iso_value'],              # ISO value
-                lens_pos = Update_camera_values['lens_pos']
-            )
-            
-            # Assuming new_rgb_settings is a protobuf object of CameraSettings type
-            client.update_rgb_settings(new_rgb_settings)
-
-            # Similarly for mono camera
-            client.update_mono_settings(new_mono_settings)
-
-            # Send modified settings to the camera
-            response = await client.send_settings()
-                
             # Create the stream
             if response_stream is None:
-                response_stream = client.stream_frames(every_n=Update_camera_values['fps'])
+                # # Update camera parameters
+                # Update_camera_values = {
+                # 'auto_exposure': self.root.ids.auto_exposure.active,
+                # 'exposure_time': self.root.ids.exposure_time.value,
+                # 'iso_value': self.root.ids.iso.value,
+                # 'lens_pos' : self.root.ids.lens.value,
+                # 'fps' : self.root.ids.fps.value
+                # }
+                
+                # print(Update_camera_values)
+                
+                # # Create a new instance of CameraSettings with desired parameters
+                # new_rgb_settings = new_mono_settings = oak_pb2.CameraSettings(
+                #     auto_exposure = Update_camera_values['auto_exposure'],         # Set auto exposure
+                #     exposure_time = int(Update_camera_values['exposure_time']),         # Assume this represents 1000ms or 1 second. Adjust based on your needs.
+                #     iso_value = int(Update_camera_values['iso_value']),              # ISO value
+                #     lens_pos = int(Update_camera_values['lens_pos'])
+                # )
+                
+                # # Assuming new_rgb_settings is a protobuf object of CameraSettings type
+                # client.update_rgb_settings(new_rgb_settings)
+
+                # # Similarly for mono camera
+                # client.update_mono_settings(new_mono_settings)
+
+                # # Send modified settings to the camera
+                # response = await client.send_settings()
+
+                # if response:
+                #     print('Ok, parameters have been updated')
+
+                response_stream = client.stream_frames(every_n=self.stream_every_n)
 
             try:
                 # try/except so app doesn't crash on killed service
@@ -364,7 +369,7 @@ class TemplateApp(App):
                 response_stream.cancel()
                 response_stream = None
                 continue
-            
+
             # get the sync frame
             frame: oak_pb2.OakSyncFrame = response.frame
 
