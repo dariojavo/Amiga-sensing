@@ -59,7 +59,7 @@ def get_timestamp_with_milliseconds():
 class TemplateApp(App):
     """Base class for the main Kivy app."""
 
-    def __init__(self, path: str, address: str, port: int, stream_every_n: int) -> None:
+    def __init__(self, path: str, address: str, port1: int, port2: int, auto_exposure: bool, exposure_time: int, iso: int, stream_every_n: int) -> None:
         super().__init__()
         self.t = self.t1 = 0 # erase
         self.counter: int = 0
@@ -69,7 +69,11 @@ class TemplateApp(App):
         self.start_counter = False
         self.path = path
         self.address = address
-        self.port = port
+        self.port1= port1
+        self.port2 = port2
+        self.auto_exposure = auto_exposure
+        self.exposure_time = exposure_time
+        self.iso = iso
         self.stream_every_n = stream_every_n
         gps_device = find_gps_device()
         if gps_device:
@@ -273,11 +277,11 @@ class TemplateApp(App):
 
         self.start_threads()  # start the threads here
         # configure the camera client
-        config = ClientConfig(address=self.address, port=self.port)
+        config = ClientConfig(address=self.address, port=self.port1)
         client = OakCameraClient(config)
 
         # configure the camera client
-        config2 = ClientConfig(address=self.address, port=50052)
+        config2 = ClientConfig(address=self.address, port=self.port2)
         client2 = OakCameraClient(config2)
         
         #Start GPS
@@ -345,12 +349,12 @@ class TemplateApp(App):
                 #     iso_value = int(Update_camera_values['iso_value']),              # ISO value
                 #     lens_pos = int(Update_camera_values['lens_pos'])
                 # )
-
+                print("Exposure", self.auto_exposure)
                 # Create a new instance of CameraSettings with desired parameters
                 new_rgb_settings = new_mono_settings = oak_pb2.CameraSettings(
-                    auto_exposure = False,         # Set auto exposure
-                    exposure_time = 1000,         # Assume this represents 1000ms or 1 second. Adjust based on your needs.
-                    iso_value = 1000              # ISO value
+                    auto_exposure = self.auto_exposure,         # Set auto exposure
+                    exposure_time = self.exposure_time,         # Assume this represents 1000ms or 1 second. Adjust based on your needs.
+                    iso_value = self.iso              # ISO value
                 )
                                
                 # Assuming new_rgb_settings is a protobuf object of CameraSettings type
@@ -481,20 +485,20 @@ class TemplateApp(App):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="template-app")
-    parser.add_argument("--port", type=int, default=50051, required=False, help="The camera port.")
-    parser.add_argument(
-        "--address", type=str, default="localhost", help="The camera address"
-    )
-    parser.add_argument(
-        "--stream-every-n", type=int, default=1, help="Streaming frequency"
-    )
+    parser.add_argument("--port1", type=int, default=50051, required=False, help="The camera1 port.")
+    parser.add_argument("--port2", type=int, default=50052, required=False, help="The camera2 port.")
+    parser.add_argument("--auto_exposure", type=bool, default=False, required=False, help="Auto exposure")
+    parser.add_argument("--exposure_time", type=int, default=10000, required=False, help="Exposure time")
+    parser.add_argument("--iso", type=int, default=100, required=False, help="ISO gain")
+    parser.add_argument("--address", type=str, default="localhost", help="The camera address")
+    parser.add_argument("--stream-every-n", type=int, default=1, help="Streaming frequency")
     # Add additional command line arguments here
     parser.add_argument("--path", type=str, default='.', required=False, help="The camera port.")
     args = parser.parse_args()
 
     loop = asyncio.get_event_loop()
     try:
-        loop.run_until_complete(TemplateApp(args.path, args.address, args.port, args.stream_every_n).app_func())
+        loop.run_until_complete(TemplateApp(args.path, args.address, args.port1, args.port2, args.auto_exposure, args.exposure_time, args.iso, args.stream_every_n).app_func())
     except asyncio.CancelledError:
         pass
     loop.close()
