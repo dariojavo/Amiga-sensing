@@ -149,7 +149,7 @@ ScreenManager:
                 Slider:
                     id: exposure_time
                     min: 0
-                    max: 20000
+                    max: 33000
                     value: 10000
                     step: 1
                     on_value: label_val_6.text = str(int(self.value))
@@ -163,8 +163,8 @@ ScreenManager:
                     text: 'Iso value'
                 Slider:
                     id: iso
-                    min: 0
-                    max: 100
+                    min: 100
+                    max: 1600
                     value: 50
                     step: 1
                     on_value: label_val_10.text = str(int(self.value))
