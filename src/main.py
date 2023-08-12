@@ -81,7 +81,7 @@ class TemplateApp(App):
         else:
             print("No GPS device found.")
             gps_device = None
-        self.gps = GPS(gps_device, simulation=True)
+        self.gps = GPS(gps_device)
         self.image_decoder = TurboJPEG()
         self.tasks: List[asyncio.Task] = []
         self.csv_filename = 'Amiga'  
