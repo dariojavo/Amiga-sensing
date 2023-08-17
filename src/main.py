@@ -59,7 +59,7 @@ def get_timestamp_with_milliseconds():
 class TemplateApp(App):
     """Base class for the main Kivy app."""
 
-    def __init__(self, path: str, address: str, port1: int, port2: int, auto_exposure: bool, exposure_time: int, iso: int, stream_every_n: int) -> None:
+    def __init__(self, path: str, address: str, port1: int, port2: int, auto_exposure: bool, exposure_time: int, iso: int, stream_every_n: int, simulation: bool) -> None:
         super().__init__()
         self.t = self.t1 = 0 # erase
         self.counter: int = 0
@@ -81,7 +81,8 @@ class TemplateApp(App):
         else:
             print("No GPS device found.")
             gps_device = None
-        self.gps = GPS(gps_device)
+        self.simulation = simulation
+        self.gps = GPS(gps_device, simulation=self.simulation)
         self.image_decoder = TurboJPEG()
         self.tasks: List[asyncio.Task] = []
         self.csv_filename = 'Amiga'  
@@ -492,13 +493,14 @@ if __name__ == "__main__":
     parser.add_argument("--iso", type=int, default=100, required=False, help="ISO gain")
     parser.add_argument("--address", type=str, default="localhost", help="The camera address")
     parser.add_argument("--stream-every-n", type=int, default=1, help="Streaming frequency")
+    parser.add_argument("--simulation", type=bool, default=False, help="Run simulation mode")
     # Add additional command line arguments here
     parser.add_argument("--path", type=str, default='.', required=False, help="The camera port.")
     args = parser.parse_args()
 
     loop = asyncio.get_event_loop()
     try:
-        loop.run_until_complete(TemplateApp(args.path, args.address, args.port1, args.port2, args.auto_exposure, args.exposure_time, args.iso, args.stream_every_n).app_func())
+        loop.run_until_complete(TemplateApp(args.path, args.address, args.port1, args.port2, args.auto_exposure, args.exposure_time, args.iso, args.stream_every_n, args.simulation).app_func())
     except asyncio.CancelledError:
         pass
     loop.close()

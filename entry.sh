@@ -4,7 +4,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 $DIR/bootstrap.sh $DIR $DIR/venv
 
 # Default path
-current_path="/data/data_recording"
+current_path="."
 
 # Check if the disk /dev/sda1 exists
 if lsblk /dev/sda1 > /dev/null 2>&1; then
