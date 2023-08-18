@@ -49,6 +49,7 @@ import json
 import subprocess
 from kivy.properties import NumericProperty
 from kivy.uix.screenmanager import Screen
+import struct
 
 def get_timestamp_with_milliseconds():
     timestamp = time.time()
@@ -205,7 +206,15 @@ class TemplateApp(App):
                 if item is None:
                     break
                 timestamp, camera_id, img, image_path, row = item
-                cv2.imwrite(image_path, img)
+                # cv2.imwrite(image_path, img)
+                height, width, channels = img.shape
+                dtype_str = str(img.dtype)
+                with open(image_path, 'wb') as f:
+                    # Write image properties as metadata
+                    f.write(struct.pack('iiii', width, height, channels, len(dtype_str)))
+                    f.write(dtype_str.encode())
+                    # Write image data
+                    f.write(img.tobytes())
                 with open(filename, 'a', newline='') as csvfile_image:
                     csv_writer = csv.writer(csvfile_image)
                     csv_writer.writerow(row)
@@ -427,7 +436,7 @@ class TemplateApp(App):
 
                     if self.start_counter:
                             timestamp, milliseconds = get_timestamp_with_milliseconds()
-                            image_name =  f'/{camera_id}/{view_name}_image_{timestamp}.jpg'
+                            image_name =  f'/{camera_id}/{view_name}_image_{timestamp}.txt'
                             image_path = self.new_path + image_name
                             gps_file_name = 'None'#f'image_{camera_id}_{int(timestamp)}_{milliseconds:03d}.jpg'
                             latitude = 'None'
