@@ -202,6 +202,7 @@ class TemplateApp(App):
     def write_image_and_csv(self, filename, queue):
         try:
             while not self.stop_threads.is_set():
+                print("Queue size:", queue.qsize())
                 item = queue.get()
                 if item is None:
                     break
@@ -379,7 +380,7 @@ class TemplateApp(App):
                 if response:
                     print(f"Ok, parameters have been updated for {port}")
 
-                response_stream = client.stream_frames(every_n=1)
+                response_stream = client.stream_frames(every_n=self.stream_every_n)
 
             try:
                 # try/except so app doesn't crash on killed service

@@ -29,6 +29,6 @@ fi
 
 sleep 1
 
-$DIR/venv/bin/python $DIR/src/main.py $@ --path "$current_path" --port1 50051 --port2 50052 --exposure_time 10000 --iso 100
+$DIR/venv/bin/python $DIR/src/main.py $@ --path "$current_path" --stream-every-n 2 --port1 50051 --port2 50052 --exposure_time 10000 --iso 100
 
 exit 0
