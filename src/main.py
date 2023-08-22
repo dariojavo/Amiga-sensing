@@ -217,8 +217,8 @@ class TemplateApp(App):
                     f.write(dtype_str.encode())
                     # Write image data
                     f.write(img.tobytes())
-                if csv_filename == 'Amiga':
-                    csv_filename = self.csv_filename
+                if filename == 'Amiga':
+                    filename = self.csv_filename
                 with open(filename, 'a', newline='') as csvfile_image:
                     csv_writer = csv.writer(csvfile_image)
                     csv_writer.writerow(row)
