@@ -137,6 +137,7 @@ class TemplateApp(App):
             os.makedirs(gps_save_path, exist_ok=True)           
 
         else:
+            self.csv_filename = 'Amiga'  
             self.root.ids.record_button.text = 'Record'
             self.root.ids.record_button.color = [0, 1, 1, .67]  # Change the button's color back to original
 
@@ -216,6 +217,8 @@ class TemplateApp(App):
                     f.write(dtype_str.encode())
                     # Write image data
                     f.write(img.tobytes())
+                if csv_filename == 'Amiga':
+                    csv_filename = self.csv_filename
                 with open(filename, 'a', newline='') as csvfile_image:
                     csv_writer = csv.writer(csvfile_image)
                     csv_writer.writerow(row)
@@ -243,7 +246,9 @@ class TemplateApp(App):
                                 "headMot":self.geo.headMot,
                 }
                 with open(self.new_path + gps_file_name, "w") as outfile:
-                    json.dump(gps_sample, outfile)           
+                    json.dump(gps_sample, outfile)
+                if csv_filename == 'Amiga':
+                    csv_filename = self.csv_filename           
                 with open(csv_filename, 'a', newline='') as csvfile_image:
                     csv_writer = csv.writer(csvfile_image)
                     csv_writer.writerow(row)
